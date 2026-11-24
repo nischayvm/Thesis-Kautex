@@ -53,6 +53,25 @@ data/annalyzer_batch_2048/
 
 ## Running the batch
 
-Double-click [Render_ANNAlyzer.bat](Render_ANNAlyzer.bat) from the project root. It starts or resumes the dataset at `data/annalyzer_batch_2048`, shows progress and ETA in the terminal, and writes a timestamped log in `data`. Resume requires the same scene, scripts, and seed. Use the completed batch for training. The earlier prototype and timing pilot folders under `data` are separate.
+The original [Render_ANNAlyzer.bat](../Render_ANNAlyzer.bat) V1 run wrote the dataset to `data/annalyzer_batch_2048`. The current launcher renders the V2 normal supplement to `data/annalyzer_regular_normals_v2`. Resume requires the same scene, scripts, and seed. The earlier prototype and timing pilot folders under `data` are separate.
 
 The batch used Cycles with **100 maximum samples, 0.015 adaptive noise threshold, denoising, and RTX 4060 OptiX**. The completed run recorded **about 4 h 30 min** for 501 renders. The regular clean reference was rendered once, and the masks were exported with the defective images.
+
+## Regular-light V2 models
+
+Each model folder contains frozen source and configuration under `V1/`, the adapted workflow under `V2/`, and outputs under `results/V1/` and `results/V2/`. The V1 scripts preserve the original layout assumptions for historical reproducibility. The batch launchers use the existing per-model `.venv` at the model root.
+
+Run a launcher from the project root. [PatchCore](../Run_PatchCore_V2.bat) · [AnomalyDINO](../Run_AnomalyDINO_V2.bat) · [U-Net](../Run_UNet_V2.bat)
+
+| Command argument | Action |
+| --- | --- |
+| `check-env` | Verify the installed CUDA environment and required weights. |
+| `check` | Verify the completed V2 normal dataset, frozen split and fixed-pose validation pairs. |
+| Double-click or no argument | Run the smoke check and validation using the reviewed V2 split. Fit PatchCore or AnomalyDINO from the 70 training normals, or load the frozen red U-Net. |
+| `validate` | Run the same validation workflow with the review decision supplied on the command line. |
+| `test "<validation-run-folder>"` | Reload a completed run's checkpoint and apply the saved validation threshold to its reserved test cohorts. |
+| `all` | Explicitly request validation followed by reserved test evaluation. |
+
+Use `--help` for launcher options. The double-click default uses the decision recorded for the fingerprinted V2 manifest and duplicate audit. To reuse that decision with an explicit command, add `--use-reviewed-split`. For a changed dataset, review the newly flagged pairs before using `--accept-near-duplicates`.
+
+V2 uses the 15 varied-pose validation normals to set a threshold at their maximum score. A score above that threshold counts as an alarm. The 15 varied-pose test normals measure false alarms. Fixed-pose defects use the V1 assignments of three validation and 97 reserved test views and provide separate sensitivity and localization estimates. Varied-pose image AUROC and AP are unavailable because those captures have no matched defects. The red and green results come from the V1 benchmark. [Research journal](JOURNAL.md)

@@ -1,12 +1,13 @@
-Anamoly_detection/patchcore/wide_resnet50_2-9ba9bcbe.pth filter=lfs diff=lfs merge=lfs -text
-Anamoly_detection/patchcore/runs/regular_smoke_20261124T072401_611224Z/fitted_state.pt filter=lfs diff=lfs merge=lfs -text
-Anamoly_detection/patchcore/runs/red_phase3_20261124T075750_651308Z/memory_bank_64.pt filter=lfs diff=lfs merge=lfs -text
-Anamoly_detection/patchcore/runs/red_phase3_20261124T075750_651308Z/memory_bank_128.pt filter=lfs diff=lfs merge=lfs -text
-Anamoly_detection/patchcore/runs/red_phase3_20261124T075750_651308Z/raw_score_maps.zip filter=lfs diff=lfs merge=lfs -text
-Anamoly_detection/patchcore/runs/red_phase3_20261124T075750_651308Z/validation_figures.zip filter=lfs diff=lfs merge=lfs -text
+Anamoly_detection/patchcore/V1/wide_resnet50_2-9ba9bcbe.pth filter=lfs diff=lfs merge=lfs -text
+Anamoly_detection/patchcore/results/V1/regular_smoke_20261124T072401_611224Z/fitted_state.pt filter=lfs diff=lfs merge=lfs -text
+Anamoly_detection/patchcore/results/V1/red_phase3_20261124T075750_651308Z/memory_bank_64.pt filter=lfs diff=lfs merge=lfs -text
+Anamoly_detection/patchcore/results/V1/red_phase3_20261124T075750_651308Z/memory_bank_128.pt filter=lfs diff=lfs merge=lfs -text
+Anamoly_detection/patchcore/results/V1/red_phase3_20261124T075750_651308Z/raw_score_maps.zip filter=lfs diff=lfs merge=lfs -text
+Anamoly_detection/patchcore/results/V1/red_phase3_20261124T075750_651308Z/validation_figures.zip filter=lfs diff=lfs merge=lfs -text
 Anamoly_detection/dataset_audit_manifest_v1.jsonl text eol=lf
 Anamoly_detection/patchcore/split_v1.json text eol=lf
-Anamoly_detection/patchcore/runs/lighting_benchmark_20261124T084630_908213Z/*/fitted_state.pt filter=lfs diff=lfs merge=lfs -text
-Anamoly_detection/anomalydino/runs/anomalydino_20261124T091730_300718Z/*/fitted_state.pt filter=lfs diff=lfs merge=lfs -text
+Anamoly_detection/patchcore/results/V1/lighting_benchmark_20261124T084630_908213Z/*/fitted_state.pt filter=lfs diff=lfs merge=lfs -text
+Anamoly_detection/anomalydino/results/V1/anomalydino_20261124T091730_300718Z/*/fitted_state.pt filter=lfs diff=lfs merge=lfs -text
 Anamoly_detection/benchmark_exports/*_validation_artifacts.zip filter=lfs diff=lfs merge=lfs -text
-Anamoly_detection/unet/runs/unet_20261124T095027_917613Z/*/best_validation.pt filter=lfs diff=lfs merge=lfs -text
+Anamoly_detection/unet/results/V1/unet_20261124T095027_917613Z/*/best_validation.pt filter=lfs diff=lfs merge=lfs -text
+Anamoly_detection/patchcore/V1/split_v1.json text eol=lf
