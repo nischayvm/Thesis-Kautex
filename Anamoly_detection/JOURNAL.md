@@ -384,3 +384,512 @@ The renderer completed 99 new PNGs plus the V1 reference. Preflight verified 70 
 | `0094` / `0087` | Train / test | 2.48 | 7.36 |
 
 Each pair had different camera and LED heights. Visual inspection confirmed close views of the same synthetic tray. Retain the frozen assignment for the preliminary benchmark and disclose the train/test similarity when reporting held-out false alarms. The three launchers now use this review decision when double-clicked. Acceptance is bound to the checked manifest and audit hashes. All three passed the live read-only preflight with the reviewed split. No fitting, inference, or test evaluation ran during this change. [Duplicate audit](../data/annalyzer_regular_normals_v2/dataset.json) · [Launcher instructions](README.md#regular-light-v2-models)
+
+## PES University M.Tech Project Work Phase-1 Review-3 · UE25CS7A1A
+
+**Review focus:** Data Pre-processing, High-Level Design, and Complete Base Model Implementation. This section summarizes the saved experiments available on 24 November 2026. **V1** is the frozen three-lighting benchmark. **V2** supplements it with new regular-light normals and a regular-light validation workflow. The scores below are development/validation results. The artifacts listed are local paths relative to this journal. Some data and run outputs are intentionally excluded from Git. [University review template](../UE25CS7A1A_%20REVIEW%203.pptx) · [Project README](../README.md) · [Dataset and launcher README](README.md)
+
+### 1. Abstract and Scope
+
+**Problem statement.** Given an RGB image of an injection-moulded automotive battery tray in an inspection cell, identify and localize visible surface blisters while suppressing responses to ordinary ribs, flange edges, texture, changing reflections and background. The industrial motivation is consistent inspection of a large textured component, including small defects that can be lost at common model input resolutions. Production throughput, quality acceptance limits, internal void detection and performance on physical parts have yet to be established.
+
+**Research objectives.** Build a controlled, reproducible image and mask dataset. Preserve the image detail and spatial coordinates needed for localization. Compare normal-only CNN and transformer patch representations with supervised segmentation. Study the cost of larger normal reference banks and measure the effects of camera height and illumination under explicitly defined protocols. Establish the evidence and interfaces needed to later map detections into part coordinates.
+
+**Implemented scope.** The Blender cell renders a generic synthetic tray, creates Blender-derived visible blister masks, and supports regular, red and green illumination. File-based tooling audits the data, freezes source-level split groups, generates stitched full-resolution maps and compares PatchCore, AnomalyDINO and U-Net. V2 broadens regular-light normal coverage. The experiment concentrates on visible flange and cross-ply laminate blisters. Burns and sink marks are capabilities of the scene generator outside this benchmark.
+
+**Proposed system scope.** Pair controlled camera/lighting acquisition with 2D anomaly scoring, localize surface indications in original image coordinates, then register those indications to a photogrammetric reconstruction or calibrated part model. The review can show camera metadata and 2D artifacts as an interface to this later stage. Multi-view calibration, reconstruction, registration, 2D-to-3D correspondence and physical validation remain proposed. [Scene and dataset details](README.md) · [Research and 3D requirements](../AGENTS.md)
+
+### 2. Suggestions from Review-2
+
+**Manual student input required.** The available repository documentation, journal, Git commit summaries and the blank university template contain no identifiable Review-2 panel minutes or remarked slides. Add the actual feedback from the student/guide, its date and the slide or minutes reference. For each verified remark, record the requested change, feasibility, implementation status and the figure or report that demonstrates it. The work documented in §§3–11 can support those responses once the feedback is supplied. No completed technical work below is attributed to a panel suggestion.
+
+### 3. Base Model Implementation
+
+| Model | Learning regime | Selection rationale | Implemented status |
+| --- | --- | --- | --- |
+| PatchCore [1] | Normal-only fitting with a frozen CNN | Useful industrial cold-start baseline when defective training images or masks are scarce. Multi-level CNN features retain relatively fine texture and local context. | V1 smoke test, red ablation and three separate lighting banks. V2 regular bank refitted and validated. |
+| AnomalyDINO [2], [3] | Normal-only fitting with a frozen vision transformer | Tests self-supervised contextual token features and cosine scoring against the CNN approach. Its 384-dimensional bank costs one quarter of an equally sized PatchCore FP32 bank. | V1 one-tile check and three separate banks. V2 regular bank refitted and validated. |
+| ResNet18 U-Net [4] | Supervised binary segmentation | Uses available pixel labels and high-resolution skip features for direct defect delineation. Forward inference needs no reference search. | V1 trained separate red and green models. V1 and V2 regular results reuse the selected red model. |
+
+#### PatchCore
+
+- **Architecture and dimensions.** TorchVision WideResNet50-2, frozen ImageNet-1K V2 weights (§9), Anomalib 2.2.0. Input is FP32 `[1,3,512,512]`. `layer2` is `[1,512,64,64]` and `layer3` is `[1,1024,32,32]`. A 3 × 3 average pool provides local aggregation, bilinear upsampling aligns the second grid to 64 × 64, and channel concatenation produces 4,096 descriptors of length 1,536 per tile.
+- **Fit and score.** Seed 24117. Partition the descriptor grid into 8 × 8 strata, sample two distinct descriptors per stratum and retain a 10% coreset from the bounded normal pool with Anomalib sparse random projection and greedy k-center. The greedy step selects a candidate far from its closest selected center in projection space and retains the corresponding original descriptor. For a test descriptor `q` and bank `B`, the patch score is `min(b in B) ||q − b||₂`. Exact search chunks 512 queries and 8,192 bank entries. The tile score uses the most anomalous patch and Anomalib's nine-neighbor support weighting around its matched bank entry. In that weighting the factor is `1 − softmax(support distances)[matched entry]`. The frame score is the maximum weighted tile score. The anomaly grid is upsampled with nearest-neighbor interpolation and smoothed with sigma 4 px per tile before full-frame stitching. Batch size 1, FP32, TF32 disabled.
+- **Trade-off.** Effective region localization on several cohorts, with no labeled defect requirement. Larger banks increase coreset cost and nearest-neighbor latency. Ribs, edges and background can produce high scores. The initial single-reference feasibility smoke test used the full descriptor pool, uniform stitching and a 10,240 × 1,536 bank. The V1/V2 benchmark configuration uses capped candidates and Gaussian stitching. §10 reports the benchmark banks separately. [V1 smoke report](patchcore/results/V1/regular_smoke_20261124T072401_611224Z/report.json) · [V1 feature/scoring code](patchcore/V1/smoke.py) · [V2 runner](patchcore/V2/run_v2.py) · [V2 sampler and stitcher](patchcore/V2/phase3.py)
+
+#### AnomalyDINO
+
+- **Architecture and dimensions.** Frozen DINOv2 ViT-S/14, `vit_small_patch14_dinov2.lvd142m`, model revision `4610ca143709d58a633b6397a74412c2c3842454`. Anomalib 2.5.1 plus timm. Reflect 3 px on all four sides of each 512 × 512 RGB tile. The 518 × 518 transformer input produces a 37 × 37 last-layer patch-token grid, or 1,369 descriptors of length 384. Batch size 1, FP32, TF32 disabled; local pinned pretrained weights, no fine-tuning, reference augmentation or foreground masking.
+- **Fit and score.** Sample two distinct tokens per cell of an 8 × 8 partition, seed 24117, and retain a 10% projected greedy k-center bank. Unit-normalized query and bank descriptors use `1 − max(b in B) cos(q,b)` for one-neighbor anomaly distance. The code uses 512-query and 8,192-bank chunks. The tile score is the mean of the highest 1% of token distances. The frame score is the maximum tile score. Anomalib upsamples and smooths the token-distance grid on the 518 px canvas, the runner removes the reflected border, and the common stitcher combines the native 512 px maps.
+- **Trade-off.** Compact normal bank and lower measured inference latency than PatchCore. Its coarser 14 px token grid and unmasked full-frame scoring can dilute small details or respond to background and reflections. Dense and chunked inference agreed in the one-tile comparison within the saved tolerances. [V1 runner and smoke comparison](anomalydino/V1/run.py) · [V2 model declaration](anomalydino/V2/baseline.py) · [V2 fitting runner](anomalydino/V2/run_v2.py)
+
+#### U-Net
+
+- **Architecture and dimensions.** ImageNet-1K V1 ResNet18 encoder with classifier removed. Five decoder blocks project channels, upsample ×2, concatenate encoder skips where available, and use two 3 × 3 convolution/batch-normalization/ReLU stages. Widths are 128, 64, 32, 16 and 8. The 1 × 1 head produces one blister logit per pixel. Input `[B,3,512,512]` → output `[B,1,512,512]`, `B ≤ 4` at inference. FP32 sigmoid probabilities are stitched to the native frame.
+- **Supervised training.** Separate red/green fits used 70 clean + 70 defective frames per lighting, with 25 tiles/frame and 3,500 tiles/epoch. Clean tiles receive zero masks. All encoder and decoder parameters update for 10 epochs, batch 4, seed 24117, AdamW learning rate 10⁻⁴ and weight decay 0.01, CUDA FP16 autocast and gradient scaling. Loss is `BCEWithLogits(z,y) + 1 − mean[(2 Σ(p·y)+1)/(Σp+Σy+1)]` with `p = sigmoid(z)` and the overlap calculated per tile. Select maximum same-light validation pixel AP, earliest epoch on ties.
+- **Scoring and transfer.** The tile map is the probability map and its score is the mean of its highest 1% of probabilities. The frame score is the maximum tile score. Regular V1 and V2 use the **same red epoch-7 checkpoint**. Regular V1 training provides one clean reference and no permitted regular defective masks for a supervised fit. V2 adds only clean views; using any reserved regular defects for training would consume evaluation data. No V2 U-Net optimization was performed.
+- **Trade-off.** Learned masks offer sharp localization and fast forward inference. This method depends on annotated defect examples, training time and the match between training and deployment domains. Its training and evidence base differ from the normal-only methods. [V1 architecture](unet/V1/model.py) · [V1 training and checkpoint selection](unet/V1/run.py) · [V2 transfer runner](unet/V2/run_v2.py)
+
+#### Slide-ready algorithm
+
+```text
+FIT_PATCH_BANK(training normals, encoder, descriptor rule):
+    For every native tile, extract frozen descriptors and sample within spatial strata
+    Fit greedy k-center on projected candidates and save selected original vectors
+
+FIT_SUPERVISED_UNET(training RGB/masks, same-light validation):
+    For each epoch, update encoder and decoder on aligned tiles with BCE + Dice
+    Run stitched validation; retain checkpoint with highest pixel AP
+
+INFER_FRAME(frame, fitted state):
+    For each tile, compute a continuous distance map or sigmoid probability map
+    Remove model-specific padding, then sum Gaussian-weighted maps on source canvas
+    Normalize by summed Gaussian weights and report maximum tile score
+    Evaluate against same-coordinate masks and export raw scores plus display images
+```
+
+### 4. Proposed Methodology / Approach
+
+#### Synthetic dataset generation
+
+The cell uses a generic **1,500 × 700 mm injection-moulded battery tray** with drafted walls, floor bays, reinforcing ribs, mounting bosses and flange fastener holes. The shell is simulated dark matte PA6-GF30. The laminate uses procedural cross-ply fibre orientation, bump and roughness, with 0.6 mm twill, 2.4 mm fibre courses and 5.8 mm broad band pitch recorded in the shader script. These are simulation parameters. The scene contains a white labeled worktop, T-slot rig, ceiling LEDs and an inspection workstation. Four cameras are available at front/rear-left/right, and four LED bars are at front, rear, left end and right end. Both ML batches use the **Front Left** camera. The rendered V2 camera metadata records a 6 mm focal length, approximately 8.8 mm sensor width and evaluated 4 × 4 camera world matrices for the 99 new views. [Batch scene](../synthetic_dataset/battery_tray_inspection_anomalies.blend) · [Clean scene](../synthetic_dataset/battery_tray_inspection_cell.blend) · [Material shader](../scripts/build_crossply_material.py) · [Camera and lighting controls](../scripts/annalyzer_controls.py)
+
+| Setting | Regular V1 | Red/green V1 | Regular V2 additions |
+| --- | --- | --- | --- |
+| Rig RGB | `(1, 0.94, 0.88)` | `(1,0,0)` / `(0,1,0)` | `(1, 0.94, 0.88)` |
+| Camera / nominal LED height | 1.610 / 1.102 m | Band limits 1.28–1.61 / 1.102–1.60 m | 99 camera and nominal LED height pairs inherited from the colored schedule |
+| Normalized rig / ceiling intensity | 1 / 1 | 1.50–2.00 / 0.35–1.10 before dark-field mixing | 1 / 1 |
+| Bright-field / partial dark-field | Standard overhead and rig illumination, mix 0 | 75 standard and 25 partial dark-field setups per color, mix 0.65–0.90 for the latter | Standard lighting, mix 0 |
+
+The color schedule has 34 low, 33 mid and 33 high setups. The respective nominal camera/LED bands in metres are 1.28–1.39/1.102–1.26, 1.39–1.50/1.26–1.43 and 1.50–1.61/1.43–1.60. Seeded stratified sampling chooses band positions and mixes. Nine low, eight mid and eight high setups per color use partial dark field. The drivers blend toward a 1.065 m grazing LED height, 9° downward grazing angle, 28° beam width and 2.5% ceiling fraction at full mix. Use the recorded effective LED height for the actual setup. Red and green share capture settings and use independent defect seeds. V2 inherits the nominal heights while using regular light settings, so this does not isolate wavelength effects. [V1 view scheduler](../scripts/render_annalyzer_batch.py) · [V2 renderer](../scripts/render_annalyzer_normals_v2.py)
+
+**Blister synthesis.** The batch invokes the defect generator embedded in the scene. One seed per defective frame varies counts, positions, radii, rotation and irregularity. The batch requests 7–10 flange and 2–8 cross-ply blisters and varies lift and individual width controls within bounds. Flange sites follow both long flange sides and can sit near fastener holes. Laminate sites fit selected floor bays, with some permitted to cross a thin rib. Parametric raised meshes have perturbed elliptical footprints, rounded crowns and taper into the original surface. Clearances, width caps and lift limits constrain placement around neighboring geometry. The batch only activates blister classes. The nominal geometry below comes from the saved 3D instance lists and precedes image projection, occlusion and rasterization.
+
+| Surface | Geometry instances across 300 masks | Nominal axis 1 min / median / max (mm) | Nominal axis 2 min / median / max (mm) | Base relief min / median / max (mm) |
+| --- | ---: | --- | --- | --- |
+| Flange | 2,591 | 5.61 / 11.10 / 17.00 | 3.00 / 5.96 / 8.80 | 0.23 / 0.63 / 1.03 |
+| Cross-ply | 1,529 | 38.55 / 80.50 / 167.99 | 35.97 / 92.77 / 178.81 | 2.70 / 4.06 / 5.40 |
+
+**Targets.** Clean/defective V1 pairs share scene, camera and light settings within a setup. The `Defect_Blister` shader AOV is generated in the same render as the defective RGB. The compositor thresholds it at >0.1 and writes raw 8-bit grayscale `0` background / `255` visible blister. Flange and laminate share one mask class. The file role gives the image label, while the full-resolution foreground mask gives pixel labels. Instance lists record tray-local centres, radii and geometry metadata; the binary mask provides no per-instance ID. Occluded or out-of-frame portions are absent. [Defect generator source](../scripts/generate_tray_anomalies.py) · [Compositor and PNG helpers](../scripts/render_prototype_dataset.py) · [V1 sample metadata](../data/annalyzer_batch_2048/samples.json)
+
+#### Dataset V1 and V2
+
+| Inventory | V1 | V2 increment | V1+V2 available |
+| --- | ---: | ---: | ---: |
+| Normal RGB files | 300, including 100 regular files representing 1 image | 99 new regular files | 399 |
+| Unique normal RGB | 201 (1 regular, 100 red, 100 green) | 99 new plus a reference to the existing clean image | 300 unique |
+| Defective RGB | 300 unique (100 per lighting) | 0 | 300 unique |
+| Unique RGB total | 501 of 600 files | 99 | 600 of 699 files |
+| Binary mask files | 300 unique | 0 | 300 |
+| PNG files on disk | 900 | 99 | 999 |
+
+The V2 manifest has **100 normals** including the V1 reference. The regular V2 benchmark uses this manifest and the existing 100 fixed-pose regular defects such that the same three defects remain validation and the other 97 remain reserved. The count of 100 regular normals across both versions is a unique count. V1's 99 redundant copies remain on disk. All ML frames are 2048 × 2048, RGB 8-bit PNG, with V1 masks stored as 2048 × 2048 grayscale 8-bit PNG. Cycles on RTX 4060 OptiX used up to 100 samples, adaptive threshold 0.015, denoising, fixed seed 24117, exposure setting 1 and white-balance override off. V1 reports about 4 h 30 min for 501 independent renders. V2 log records about 47 min 37 s through the last of the 99 renders, before its final duplicate audit.
+
+```text
+data/annalyzer_batch_2048/
+  dataset.json, samples.json
+  regular|red|green / normal|bubbles|masks / 0001.png … 0100.png
+data/annalyzer_regular_normals_v2/
+  dataset.json, manifest_v2.json
+  normal/                    # 99 varied views; the reference points into V1
+Anamoly_detection/
+  dataset_audit_manifest_v1.jsonl
+  patchcore/V1/split_v1.json  # canonical split
+```
+
+| Cohort | Training availability (normal / defective) | Validation (normal / defective) | Reserved test (normal / defective) |
+| --- | ---: | ---: | ---: |
+| V1 regular | 1 / 0 | 0 / 3 | 0 / 97 |
+| V1 red, per lighting | 70 / 70 | 15 / 15 | 15 / 15 |
+| V1 green, per lighting | 70 / 70 | 15 / 15 | 15 / 15 |
+| V2 regular | 70 / 0 | 15 varied / 3 fixed-pose | 15 varied / 97 fixed-pose |
+
+Training availability is independent of which model consumes the labels. The normal-only models discard the defective training class. The frozen colored 70/15/15 split stratifies by height band and dark-field status. An ID and all files for its red/green setups stay in one fold, including both normal and defective views and masks. The nearest colored-normal pair `0091`/`0094` is grouped in training. Source frames are split before tiled inference/training. The V2 renderer inherits the colored groups, drops `0100` from the training view schedule and places the single fixed reference in that slot. The reused regular defects keep their frozen V1 assignments `0004`, `0074` and `0097` for development and 97 for test.
+
+**Integrity and leakage audit.** V1 verified 300 complete triples, file names and paths, PNG headers, Pillow decode, binary nonempty aligned masks, foreground counts and audit SHA-256 over both file bytes and decoded pixels. The 100 regular clean copies form the only exact duplicate group. V2 preflight verifies completion, matching manifest IDs and groups, images and expected dimensions, dataset fingerprints and fixed-pose validation mask hashes. The renderer found zero decoded-pixel duplicates and four cross-fold near pairs using 64 × 64 RGB-thumbnail RMSE ≤2.5: train/validation `0079/0068` (2.31), `0082/0098` (2.41), `0096/0075` (2.42), and train/test `0094/0087` (2.48). They use distinct camera and LED heights but look similar. The retained decision is tied to exact metadata fingerprints. The regular fixed reference and fixed-pose defective frames share capture geometry by design. Shared tray/scene and close cross-fold views limit independence even with correct file and group separation. [V1 audit](dataset_audit_manifest_v1.jsonl) · [Frozen split](patchcore/V1/split_v1.json) · [V2 manifest](../data/annalyzer_regular_normals_v2/manifest_v2.json) · [V2 duplicate audit](../data/annalyzer_regular_normals_v2/dataset.json)
+
+| V1 visible-mask components | Count | Area P10 / P50 / P90 (px²) | Short side P10 / P50 / P90 (px) |
+| --- | ---: | --- | --- |
+| Regular | 1,617 | 27 / 162 / 6,065 | 5 / 14 / 89 |
+| Red | 1,481 | 23 / 172 / 7,452 | 4 / 13 / 96 |
+| Green | 1,452 | 22 / 124.5 / 6,246.2 | 4 / 11.5 / 90 |
+| All | 4,550 | 24 / 150 / 6,569.8 | 4 / 13 / 91 |
+
+The 8-connected components range from 1 to 41,990 px². The median defect mask occupies 26,508 pixels or 0.632% of the frame. Visible components can split at occlusions or merge and differ from physical blister instances. V2 adds no defective masks, so it neither expands this distribution nor supplies matched normal/defective pairs for the varied poses. **Why V2:** the V1 regular bank saw one normal and had zero independent regular negatives for calibration. V2 tests whether more normal views improve fixed-pose localization and enables a regular normal operating-point protocol, with a reserved but unevaluated false-alarm cohort. [Original footprint audit](#visible-defect-footprints-at-source-resolution)
+
+#### Data preprocessing
+
+1. Verify the frame/mask pair in native coordinates. Split whole source frames first. Crop a 5 × 5 grid of 512 × 512 tiles at axis starts 0, 384, 768, 1,152 and 1,536. Overlap is 128 px, stride 384 px, with direct coverage of the full 2048 × 2048 frame. Crop masks identically and keep them binary. Normal frames use all-zero masks where required by supervised learning.
+2. Convert decoded RGB to floating point, scale by 1/255 and normalize by the checkpoint means `[0.485,0.456,0.406]` and standard deviations `[0.229,0.224,0.225]`. RGB channels are retained under every light. The transformer only adds reflection padding to reach 37 × 14 = 518 and crops that border from the output.
+3. Stitch native continuous scores with a separable Gaussian of sigma 128 px centred on each tile. At every full-frame coordinate, compute `Σ(wᵢ·scoreᵢ)/Σwᵢ`. Use 2048 × 2048 FP32 arrays for metrics. Shared display scales generate heatmaps independently of quantitative scores.
+
+**Why native resolution:** the median component short side is 13 px and the 10th percentile is 4 px. A 256 px full-frame resize yields about 1.6 px and 0.5 px respectively, before feature downsampling. On the CNN `layer2` grid the nominal eight-pixel stride corresponds to 8 native pixels with tiling, 32 with a 512 px full-frame resize and 64 with a 256 px resize. The audit found that 4,511/4,550 visible boxes fit in at least one native tile. The remaining 39 need stitched context. Overlap protects boundaries but introduces redundant computation, patch context stops at tile edges, and 25 tiles per frame increase compute and bank size. Transformer padding is just a divisibility adjustment. [Native-resolution audit](#initial-patchcore-input-recommendation) · [Stitching implementation](patchcore/V2/phase3.py) · [Transformer padding](anomalydino/V2/baseline.py)
+
+### 5. Design Approach
+
+The system separates scene generation, immutable dataset artifacts, audit and split definitions, interchangeable model adapters and full-frame evaluation. This keeps input geometry and sample assignments consistent while changing feature representation or learning regime. One renderer provides repeatable labeled images under configurable geometry and illumination. Separate banks for each lighting condition and separate supervised color fits avoid mixing score distributions and respect the in-lighting benchmark. The explicit red-to-regular transfer asks a different question from same-light fitting.
+
+Two frozen-encoder alternatives use local feature distance, either aggregated CNN descriptors or contextual transformer tokens. Both fit from verified normals, store compact coresets, and search exact distances in chunks. U-Net learns a task-specific mask from annotated positives and avoids a nearest-neighbor bank. The supervised and normal-only regimes differ in label access, fitting time and generalization risks. Compare them on shared evaluation cohorts and label those training differences in every cross-model slide.
+
+| Alternative | Evidence or rationale | Decision |
+| --- | --- | --- |
+| Whole frame at 256 or 512 px | Geometric sizing estimates in §4 show many visible components would occupy very few pixels or less than one feature stride. No low-resolution baseline was fitted. | Preserve native scale and use overlapping patches. |
+| All PatchCore descriptors | Feasibility estimates for 70 views were 7.168 million × 1,536 FP32 descriptors, about 41.02 GiB for candidates alone, and about 4.10 GiB for a 10% final bank. The single-normal smoke fit was feasible. | Cap candidates by spatial stratum, retain a 10% coreset and search in chunks. |
+| 64 versus 128 candidates | Controlled red-validation comparison shows 128 Gaussian raised pixel AUROC/AP/AUPRO to 0.9486/0.2960/0.8177 from 0.8609/0.1763/0.6041, with a larger bank and longer fitting/inference. | Use 128 with validation evidence and recorded memory trade-offs. |
+| Uniform versus Gaussian stitching | At 128 candidates, mean seam step fell from 0.7672 to 0.2942 (61.7%) with Gaussian stitching. This choice slightly improved aggregate pixel results. Uniform had higher small-region overlap at 1% FPR on red. | Adopt Gaussian weights for benchmark maps. Report the small-region trade-off. |
+| Shared model across light, part ROI, approximate search or larger encoder | Possible ways to change invariance, background suppression, capacity or latency. The saved benchmark uses separate lights, whole frame, exact chunked search and the stated encoder sizes. | No experimental claim for these alternatives. |
+
+Bounded-memory design begins with a one-frame or one-tile smoke test, verifies map dimensions and reconstruction from checkpoint, and saves raw arrays and measurements for audit. See §10 for the experimental numbers rather than inferring a universal ranking from design choices. [PatchCore capacity estimates](#red-and-green-feasibility) · [Red optimization report](patchcore/results/V1/red_phase3_20261124T075750_651308Z/report.json)
+
+### 6. Design Constraints, Assumptions & Dependencies
+
+| Constraint or assumption | Evidence and impact |
+| --- | --- |
+| Local compute | NVIDIA GeForce RTX 4060 Laptop GPU, 8,187.5 MiB device memory reported by PyTorch and about 15,554 MiB host RAM recorded in V1. The documentation-time Windows hardware inventory reports AMD Ryzen 7 7840HS, 8 cores/16 logical processors. GPU memory bounds candidate construction, bank search and tile batch size. Sampling and mixed precision enable the measured configurations. Wall times are specific to the local stack. |
+| Small visible defects | The 4 px short-side P10 is below either frozen encoder's nominal spatial stride. Feature interpolation cannot restore discarded information. Use native tiling and report size-stratified metrics. |
+| Shared synthetic domain | One generic tray design, one simulated cell, procedurally modeled materials and mainly one camera orientation. Train and validation sample different simulated setups within that domain. Physical surface reflectance, exposure noise, manufacturing variation and real defects can differ. Independent real-part evaluation is required. |
+| Fixed and varied views | Regular defects share the one fixed pose, including the normal reference. Colored normals/defects vary in heights and light settings. V2 varies normal heights only. This prevents matched varied-pose image ranking and confounds direct comparisons with colored results. |
+| Illumination | Red and green share the schedule but use different defect realizations. Regular changes both illumination and capture protocol. Highlighting or suppressing background under a light is a plausible explanation to investigate, not a measured wavelength-only effect. |
+| Label and pixel imbalance | Blister foreground is sparse, even with balanced normal/defective colored images. The regular validation masks provide 106,761 positive and 12,476,151 background pixels across three defective frames, about 0.85% foreground. Pixel AP and low-FPR overlap complement AUROC. Annotated training defects are available only within the approved red/green folds. |
+| Annotation assumptions | Shader AOV visibility defines ground truth in simulation. The current label is visible blister foreground. It provides neither production accept/reject severity nor pixel-to-instance correspondence. |
+| Pretrained and framework dependencies | Exact ImageNet and DINOv2 weight files and pinned PyTorch/TorchVision/Anomalib/timm APIs are required. Each model has its own environment and stores version, configuration or hashes in reports/locks. CUDA resource usage is device- and allocator-dependent. Rendering uses Cycles OptiX and the matching scene/script version. |
+| Acquisition and calibration | V2 camera matrices and optics describe evaluated Blender cameras. Production camera intrinsics, lens distortion, platform transform, depth or reconstruction and measurement uncertainty are still needed for a physical 2D-to-3D mapping. |
+
+### 7. Architecture
+
+```mermaid
+flowchart TD
+    A["Blender scene: simulated tray, four-camera rig, LED controls"] --> B["Batch acquisition: Front Left, regular/red/green; seeded geometry"]
+    B --> C["Normal RGB, defective RGB, blister AOV masks and capture metadata"]
+    C --> D["V1 integrity audit and V2 duplicate audit"]
+    D --> E["Freeze and verify grouped source-frame splits"]
+    E --> F["Native RGB/mask tiles; ImageNet normalization"]
+    F --> P["PatchCore: normal CNN bank and L2 scores"]
+    F --> Q["AnomalyDINO: normal ViT bank and cosine scores"]
+    F --> R["U-Net: paired supervised fitting or frozen transfer"]
+    P --> M["Continuous tile anomaly or probability maps"]
+    Q --> M
+    R --> M
+    M --> N["Gaussian stitching and image-score aggregation"]
+    N --> O["Native 2048 x 2048 maps and image scores"]
+    C --> T["Aligned mask and image labels"]
+    O --> V["AUROC, AP, AUPRO, size diagnostics and operating point"]
+    T --> V
+    V --> W["Reports, score charts and qualitative comparison"]
+    O --> W
+    O -. "Proposed: 2D pixel coordinates / score regions" .-> X["Future calibrated photogrammetry or CAD registration"]
+    C -. "Proposed: camera metadata and multi-view acquisition" .-> X
+    X -.-> Y["Future part-coordinate surface locations and uncertainty"]
+```
+
+The solid path exists in code and outputs. The dashed path describes future work. Dataset/scene operator and model/review operator are logical roles for the demo. There is no account or role-management application. The planned interface would retain source coordinates, camera identity, calibration/extrinsics and a registered surface. A back-projected ray requires geometry or triangulation and checking for occluded or ambiguous intersections.
+
+### 8. Design Description
+
+| Module | Input / interface | Output / interaction |
+| --- | --- | --- |
+| Blender rig and rendering | Blender `bpy` scene, control properties/driver expressions, camera, seed and batch settings | RGB PNG, AOV mask PNG, capture/geometry metadata, completion marker and logs. Interactive Blender sidebar also renders four camera views and offers spot acquisition. |
+| Defect synthesis | Tray geometry, seed, defect class counts and geometry controls | Procedurally raised flange/laminate mesh instances with AOV material and instance metadata. |
+| Audit and grouping | V1 `samples.json` and files, audit manifest, frozen split, V2 manifest/render audit | Pairing/label checks, reproducible folds, checksum-backed adapters and duplicate-review decision. |
+| Model adapters | In-memory tile tensors and split-appropriate normal images or supervised masks; pinned pretrained weights | Patch bank or segmentation checkpoint. Validation consumes loaded fitted state and returns stitched map and image score. |
+| Evaluation/reporting | Aligned full-frame maps and masks, saved V2 calibration rule | Connected-component diagnostics, pooled metrics, image scores, JSON, CSV, PNG comparisons and raw NPY maps. |
+| Local launchers and publication | Windows batch calls local Python, using the model's isolated `.venv`. Publication launcher reads completed reports and checkpoint hashes. | Separate run folders. Optional Git/Git LFS publishing for selected derived results. The dataset and original RGB/mask assets stay local. |
+
+```mermaid
+classDiagram
+    class ChunkedPatchCore
+    class PatchcoreModel
+    class ChunkedAnomalyDINO
+    class AnomalyDINOModel
+    class Stitcher
+    class ResNet18UNet
+    class UpBlock
+    class GaussianStitcher
+    class RegionTargets
+    class PixelMetrics
+    PatchcoreModel <|-- ChunkedPatchCore
+    AnomalyDINOModel <|-- ChunkedAnomalyDINO
+    ResNet18UNet *-- UpBlock : five decoder blocks
+    GaussianStitcher ..> ResNet18UNet : requests logits
+    PixelMetrics ..> RegionTargets : consumes mask components
+    note for Stitcher "Shared weighted reconstruction for PatchCore and AnomalyDINO"
+```
+
+**Data schema and reporting.** V1 JSON is keyed by `lighting/sample_id`, with nested `files`, settings, seed, foreground count and `instances`. The JSONL audit adds identities, `capture_setup_id`, byte/decoded hashes and mask coverage/component counts. `split_v1.json` maps colored folds to setup IDs and regular folds to reference/defect IDs. V2 manifests use project-relative `path`, `image_id`, `group_id`, `split`, `label`, nullable `mask_path`, related colored IDs, setup values and hashes. New captures include evaluated camera matrices and optical values. This is a file-level relation: a setup groups capture records, and a defective capture has one binary mask and many generated geometry entries. A database ER diagram is **not applicable** because no persistent database exists.
+
+**Report contracts.** V1 consolidated JSON contains configuration, environment and `lighting`, with per-condition metrics, timings, predictions and checkpoint provenance. Model-specific V1 CSV summary and charts consume those reports. V2 `validation/report.json` contains `stage`, `threshold`, `threshold_rule`, `varied_normal`, `fixed_pose_defects`, `fit_measurements`, `measurements`, hashes, checkpoint and per-image `rows`. V2 `scores.csv` includes `id`, `cohort`, `image_score`, `map_max`, `inference_seconds`, `score_map`, `flagged` and `positive_pixels` where available. Score plots place varied normals and fixed-pose defects on separate rows with the threshold line. Side-by-side image, mask or ground-truth overlay and heatmap/heatmap overlay show localization. Heatmap scales are display-specific. The shared CNN/ViT stitcher and U-Net stitcher use equivalent weighting; metrics consume full-frame raw scores.
+
+**Operator workflow and interfaces.** An operator selects a Blender camera or renders four views using the capture sidebar. The research workflow below it runs through Windows batch/PowerShell and saved files. V2 model launchers support `check-env`, `check`, no-argument validation on the fingerprinted split, `validate --use-reviewed-split`, `test "<run-folder>"` and `all`. Test reloads the validated checkpoint, enforces matching source and dataset identities, and reuses calibration. V1 archived scripts are historical source snapshots with their original layout assumptions. The implemented visualization surface consists of Blender camera/lighting/capture panels and offline plots, PNGs and reports. A separate inspection GUI, dashboard and user database are **not applicable**. External library interfaces are Blender Python/AOVs, PyTorch modules/tensors/checkpoints, TorchVision backbones, Anomalib patch models and components, timm, Pillow, NumPy, OpenCV, scikit-learn, Matplotlib and Git LFS. No network inference service is used. [Blender panel classes](../scripts/annalyzer_controls.py) · [Evaluation classes](patchcore/V1/phase3_metrics.py) · [V2 workflow and report fields](v2_workflow.py) · [Launcher guide](README.md#regular-light-v2-models)
+
+```mermaid
+flowchart LR
+    S["Scene operator"] --> B["ANNAlyzer Blender sidebar"]
+    B --> L["LED Lighting and Image and Render Settings"]
+    B --> C["Inspection Cameras → View Selected Camera"]
+    B --> R["Inspection Capture → Render All 4 Cameras"]
+    M["Model/review operator"] --> V["Run validation launcher"]
+    V --> O["Read metric reports and inspect saved overlays"]
+```
+
+### 9. Technologies Used
+
+| Used technology | Verified version or role |
+| --- | --- |
+| Blender, Cycles and OptiX | Both batch logs report Blender 5.3.0, build `02f0899d78e3`. Scene authoring, procedural materials and defects, configurable acquisition and binary shader-pass export. GPU OptiX accelerated rendering. |
+| Python, uv and Windows batch | Python 3.12.13 in benchmark reports, with per-model `uv.lock` environments and Windows launchers. Original separate audit used Python 3.14. |
+| PyTorch, TorchVision and NVIDIA stack | PyTorch 2.9.1+cu128, TorchVision 0.24.1+cu128 and CUDA 12.8 in saved model reports. PatchCore smoke recorded cuDNN code `91002` (9.10.2). PyTorch provides GPU feature extraction, exact search, supervised training and serialization. |
+| Anomalib and timm | Anomalib 2.2.0 for PatchCore, 2.5.1 for AnomalyDINO. AnomalyDINO records timm 1.0.27 for the pinned DINOv2 ViT-S/14 checkpoint. |
+| Pretrained files | WideResNet50-2 ImageNet-1K V2 `wide_resnet50_2-9ba9bcbe.pth`, ResNet18 ImageNet-1K V1 `resnet18-f37072fd.pth`, and frozen DINOv2 `model.safetensors` at the `4610ca1…` revision. Reports verify full SHA-256 and V1/V2 U-Net transfer uses the same red checkpoint. |
+| OpenCV, NumPy, SciPy, Pillow | OpenCV 8-connected regions and image analysis, NumPy array math and histogram metrics, SciPy available for scientific tooling, Pillow for image decoding/integrity and figure exports. The original audit recorded OpenCV 5.0.0, NumPy 2.4.0, SciPy 1.16.3 and Pillow 12.1.0. Current model environment metadata lists OpenCV wheels 5.1.0.95, NumPy 2.5.5, SciPy 1.18.1 and Pillow 13.0.0. These inventories describe different environments. |
+| scikit-learn, Matplotlib, psutil | Image-ranking metrics, result charts and sampled process RAM. Current model metadata lists scikit-learn 1.9.1, Matplotlib 3.11.2 and psutil 7.2.2. |
+| Git, Git LFS and GitHub | Git 2.52.0.windows.1 and Git LFS 3.7.1 observed locally. Git versions code, audit and result summaries. Git LFS holds approved large model artifacts and GitHub hosts the project repository. |
+| Hardware | Windows workstation, RTX 4060 Laptop GPU, AMD Ryzen 7 7840HS, approximately 15.2 GiB usable host RAM as reported by the benchmark. See §6 for measurement basis. |
+
+**Planned technology:** calibrated multi-view acquisition, photogrammetric reconstruction or registered part geometry, and spatial registration/uncertainty validation. Tool selection and validation are pending. [V1 PatchCore environment and pretrained file](patchcore/V1/README.md) · [AnomalyDINO environment and pinned weights](anomalydino/V1/README.md) · [U-Net environment and encoder](unet/V1/README.md)
+
+### 10. Project Demo and Experimental Results
+
+#### Metric and cohort definitions
+
+- **Pixel AUROC** measures foreground/background ranking over pooled native-frame pixels. **Pixel AP** integrates precision across recall increments from the same raw continuous scores. Use AP to complement AUROC when blister pixels are rare. **Image AUROC/AP** use frame scores and class labels. These image metrics are reported for V1 red/green only.
+- **AUPRO** averages the fraction of pixels recovered in each equally weighted 8-connected mask component across thresholds. Report the area to **30% pooled background-pixel FPR**, normalized by 0.30. Size bands are small <64 px², medium 64–511 px² and large ≥512 px². Mean overlap at the diagnostic 1% background FPR is a point on that curve. Neither AUPRO, overlap, AP nor AUROC is the percentage of individual bubbles detected. Per-instance matching, recall and detection thresholds are unavailable.
+- V1 colored pixel metrics include all 15 clean and 15 defective validation frames per color. Regular V1 and V2 pixel metrics use the same three fixed-pose defective frames, including their in-frame background but excluding the separate normal cohort. All pixel metrics use the whole frame and 65,536 score histogram bins, with no inference ROI. The V1 reports check sensitivity to halving histogram resolution. V2 image-level calibration is a separate diagnostic on varied normals and fixed-pose defects. [Metric implementation](patchcore/V1/phase3_metrics.py) · [V2 evaluator](v2_workflow.py)
+
+#### V1 validation · all lighting conditions
+
+| Light and model | Pixel AUROC | Pixel AP | AUPRO | Image AUROC | Image AP |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Regular PatchCore, one normal | 0.8061 | 0.0534 | 0.7015 | N/A | N/A |
+| Regular AnomalyDINO, one normal | 0.7437 | 0.0824 | 0.5385 | N/A | N/A |
+| Regular U-Net, red transfer | 0.9586 | 0.7834 | 0.8198 | N/A | N/A |
+| Red PatchCore | 0.9486 | 0.2960 | 0.8177 | 0.9200 | 0.9314 |
+| Red AnomalyDINO | 0.8378 | 0.1346 | 0.6304 | 0.8711 | 0.8857 |
+| Red U-Net | 0.9090 | 0.7456 | 0.5897 | 0.9733 | 0.9810 |
+| Green PatchCore | 0.9455 | 0.2930 | 0.8346 | 0.9156 | 0.9220 |
+| Green AnomalyDINO | 0.8317 | 0.1656 | 0.6867 | 0.8667 | 0.8873 |
+| Green U-Net | 0.9056 | 0.7408 | 0.8099 | 1.0000 | 1.0000 |
+
+Pixel foreground fractions across the scored V1 cohorts are about 0.85% regular, 0.36% red and 0.38% green. The regular cohort has no independent normal images or calibrated image threshold in V1. The perfect green U-Net image ranking is on 30 synthetic validation frames. [V1 three-model CSV](unet/results/V1/unet_20261124T095027_917613Z/three_model_comparison.csv) · [V1 metric comparison chart](unet/results/V1/unet_20261124T095027_917613Z/three_model_comparison.png)
+
+| V1 validation light and model | Small | Medium | Large |
+| --- | ---: | ---: | ---: |
+| Regular PatchCore | 0.8430 / 0.1497 | 0.7425 / 0.3945 | 0.5778 / 0.1022 |
+| Regular AnomalyDINO | 0.7060 / 0.1568 | 0.6137 / 0.2001 | 0.3730 / 0.1272 |
+| Regular U-Net transfer | 0.7121 / 0.6444 | 0.7401 / 0.6383 | 0.9486 / 0.9317 |
+| Red PatchCore | 0.7331 / 0.3256 | 0.8941 / 0.7539 | 0.8430 / 0.5190 |
+| Red AnomalyDINO | 0.5483 / 0.4094 | 0.7903 / 0.6918 | 0.5971 / 0.3259 |
+| Red U-Net | 0.2494 / 0.1965 | 0.6936 / 0.6795 | 0.8282 / 0.8220 |
+| Green PatchCore | 0.7795 / 0.3721 | 0.9038 / 0.7178 | 0.8517 / 0.5536 |
+| Green AnomalyDINO | 0.6865 / 0.5263 | 0.7912 / 0.6532 | 0.6273 / 0.3442 |
+| Green U-Net | 0.7906 / 0.7538 | 0.8056 / 0.7886 | 0.8320 / 0.8174 |
+
+Cells are **AUPRO / mean overlap at 1% background FPR**. The small/medium/large component counts are 14/15/21 regular, 78/58/86 red and 88/49/86 green. [V1 size-by-model chart](unet/results/V1/unet_20261124T095027_917613Z/three_model_defect_sizes.png)
+
+#### V1 PatchCore ablation and supervised checkpoint selection
+
+| Red PatchCore candidates/tile and stitch | Pixel AUROC | Pixel AP | AUPRO | Mean score seam step |
+| --- | ---: | ---: | ---: | ---: |
+| 64 uniform | 0.8638 | 0.1719 | 0.6148 | 0.8460 |
+| 64 Gaussian | 0.8609 | 0.1763 | 0.6041 | 0.3207 |
+| 128 uniform | 0.9469 | 0.2874 | 0.8141 | 0.7672 |
+| **128 Gaussian** | **0.9486** | **0.2960** | **0.8177** | **0.2942** |
+
+Both runs used the same 70 red normals, 10% coreset, seed and capped sampling rule. The 128 pool contains the 64 pool and a second sample per spatial cell. Both stitchers reuse the same raw tile predictions within each candidate budget. Image AUROC/AP were 0.8311/0.8554 at 64 and 0.9200/0.9314 at 128 and are independent of the stitcher. Banks increased from 11,200 × 1,536 (65.63 MiB) to 22,400 × 1,536 (131.25 MiB). Coreset time rose from 20.13 to 83.35 s and mean inference from 1.18 to 1.89 s/frame. The 128 Gaussian small-region 1%-FPR overlap was 0.326 versus 0.341 for 128 uniform. The seam compares adjacent score changes at tile boundaries with parallel controls 16 pixels away. The visualization shows reduced rectangular seams and residual rib and background responses. The incomplete first attempt stopped during figure export and the completed run supplies the metrics here. [Red optimization report](patchcore/results/V1/red_phase3_20261124T075750_651308Z/report.json) · [Uniform/Gaussian visual comparison](patchcore/results/V1/red_phase3_20261124T075750_651308Z/comparison.png)
+
+| V1 U-Net | Train BCE+Dice epoch 1 → 10 | Highest validation pixel AP | Selected epoch | Measured training passes / epoch validation time |
+| --- | ---: | ---: | ---: | ---: |
+| Red | 1.3572 → 0.9113 | 0.745649 | 7 | 1,041.37 / 46.59 s |
+| Green | 1.3587 → 0.9303 | 0.740780 | 9 | 1,019.71 / 42.28 s |
+
+Training continually updates the encoder and decoder. The selected checkpoint maximizes validation AP and need not be the last epoch. Reloaded states reproduced their selected AP. The curves show loss and AP trajectories. [Training curves](unet/results/V1/unet_20261124T095027_917613Z/training_curves.png) · [Red epoch history](unet/results/V1/unet_20261124T095027_917613Z/red/history.json) · [Green epoch history](unet/results/V1/unet_20261124T095027_917613Z/green/history.json)
+
+#### V2 regular validation · refits, fixed-pose metrics and operating point
+
+V2 adds 99 clean regular-light views because V1 had only one independent clean regular view. The new normal folds are 70/15/15 including the reference in training. PatchCore and AnomalyDINO refit only their normal banks using all 70 training normals. Both kept their encoder weights, dimensions, candidate count 128, 10% ratio, batch size, precision, seed, neighborhood rules, tiling and Gaussian stitching. U-Net reused red epoch 7, unchanged apart from applying the V2 validation scoring protocol. No V2 red/green reruns are present. The same three legacy fixed-pose defects support the localization comparison, separately from varied normal calibration.
+
+**Smoke-test evidence.** PatchCore and AnomalyDINO each fit a temporary one-tile bank from `regular-v2/0001` and scored a tile from `regular/0004`. Their smoke banks held 12 × 1,536 and 12 × 384 descriptors, respectively. The saved smoke diagnostics report zero map reload error for both and a maximum AnomalyDINO dense-versus-chunked error of about 4.17 × 10⁻⁷. U-Net loaded epoch 7 and returned a 2048 × 2048 map for `regular/0004` without fitting. These are implementation checks. [PatchCore smoke JSON](patchcore/results/V2/regular_v2_20261124T140600_238105Z/smoke.json) · [AnomalyDINO smoke JSON](anomalydino/results/V2/regular_v2_20261124T141424_324010Z/smoke.json) · [U-Net smoke JSON](unet/results/V2/regular_v2_20261124T143148_520300Z/smoke.json)
+
+| V2 regular validation | Pixel AUROC | Pixel AP | AUPRO | Image AUROC/AP | Small AUPRO / overlap | Medium AUPRO / overlap | Large AUPRO / overlap |
+| --- | ---: | ---: | ---: | --- | ---: | ---: | ---: |
+| PatchCore | 0.9610 | 0.2710 | 0.9071 | N/A | 0.9805 / 0.8402 | 0.8959 / 0.8344 | 0.8661 / 0.3890 |
+| AnomalyDINO | 0.8194 | 0.1946 | 0.7163 | N/A | 0.8737 / 0.6651 | 0.8069 / 0.5308 | 0.5466 / 0.2726 |
+| U-Net, red transfer | 0.9586 | 0.7834 | 0.8198 | N/A | 0.7121 / 0.6444 | 0.7401 / 0.6383 | 0.9486 / 0.9317 |
+
+Image AUROC/AP remain unavailable for matched regular varied-pose evaluation because there are no matching varied-pose positives. The threshold is the **maximum score among 15 varied normal validation images**. Flag a frame only when its score is strictly greater. The saved reports specify TP and FP by cohort. TN and FN below derive by subtracting them from cohort sizes. The validation negatives define their own maximum, so 0/15 validation false alarms is forced by calibration and does not establish a held-out false-positive rate.
+
+| V2 model | Validation score threshold | TN / FP, varied normals | TP / FN, fixed defects | Sensitivity | Validation FPR |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| PatchCore | 21.543180 | 15 / 0 | 3 / 0 | 3/3 (100%) | 0/15 (0%) |
+| AnomalyDINO | 0.276206 | 15 / 0 | 1 / 2 | 1/3 (33.3%) | 0/15 (0%) |
+| U-Net, red transfer | 0.999720 | 15 / 0 | 2 / 1 | 2/3 (66.7%) | 0/15 (0%) |
+
+PatchCore flagged `0004`, `0074` and `0097`. AnomalyDINO flagged `0097`. U-Net flagged `0074` and `0097`. Score units differ between methods, so numerical thresholds do not compare across models. The sensitivity column is an image-level validation count over three fixed-pose examples. **Held-out test:** no completed test reports in the local V1 or V2 run directories. V1 reserves 15 normal + 15 defects per color and 97 fixed-pose regular defects. V2 reserves 15 varied normal and 97 fixed-pose defective frames. The V2 test entry point can reuse the saved rule. No held-out AUROC/AP, FPR, sensitivity, pixel metrics or instance recall are available. [PatchCore V2 report](patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/report.json) · [AnomalyDINO V2 report](anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/report.json) · [U-Net V2 report](unet/results/V2/regular_v2_20261124T143148_520300Z/validation/report.json)
+
+#### V1 → V2 comparison on the same three regular validation defects
+
+| Model | V1 → V2 regular training inputs | V1 → V2 bank storage | Δ pixel AUROC (pp) | Δ pixel AP (pp) | Δ AUPRO (pp) |
+| --- | --- | --- | ---: | ---: | ---: |
+| PatchCore | 1 → 70 normals, refit | 320 × 1,536 (1.875 MiB) → 22,400 × 1,536 (131.25 MiB) | +15.50 | +21.77 | +20.56 |
+| AnomalyDINO | 1 → 70 normals, refit | 320 × 384 (0.469 MiB) → 22,400 × 384 (32.813 MiB) | +7.57 | +11.21 | +17.78 |
+| U-Net, red transfer | 0 → 0 regular fit images, same red checkpoint | N/A | 0.00 | 0.00 | 0.00 |
+
+Each regular fitted bank starts from 3,200 V1 or 224,000 V2 candidate rows and retains 10%. The V1 red/green banks already used 224,000 candidates and have the same per-model dimensions and MiB as the respective V2 regular banks. Deltas are `100 × (V2 − V1)` from saved unrounded metrics and refer to absolute percentage points. Pixel cohorts are unchanged. For the independent normal validation cohort the input count changed from 0 to 15. There is no V1 threshold-metric baseline or comparable regular image AUROC/AP change.
+
+| Method | Small Δ AUPRO / overlap (pp) | Medium Δ (pp) | Large Δ (pp) |
+| --- | ---: | ---: | ---: |
+| PatchCore | +13.75 / +69.06 | +15.34 / +43.99 | +28.83 / +28.68 |
+| AnomalyDINO | +16.76 / +50.84 | +19.32 / +33.07 | +17.36 / +14.54 |
+| U-Net, red transfer | 0.00 / 0.00 | 0.00 / 0.00 | 0.00 / 0.00 |
+
+| V1 limitation | Implemented V2 response | Observed outcome and remaining limitation |
+| --- | --- | --- |
+| A single independent clean view for regular illumination | Added 99 clean views, expanded the regular bank inputs to 70 and retained two clean folds of 15. | Both refits gained on the same three defective frames. More normal feature coverage is a plausible explanation. The design changes both normal training diversity and bank size, so it does not isolate either effect. |
+| No independent regular normals for an operating point | Calibrate on the 15 normal validation views and reserve 15 separate normals for later scoring. | All three saved a threshold, with 3/3, 1/3 and 2/3 fixed-pose flags. Validation FPR is zero by construction and one flagged near pair spans train/test. |
+| No matched varied-pose defective frames available | Retained fixed-pose V1 defect assignments and marked varied-pose image ranking unavailable. | Pixel metrics remain comparable to regular V1 on these three defects. Evidence remains limited to this small defect cohort. |
+| No eligible regular labeled positives for U-Net | Use the saved red checkpoint for transfer and evaluate the new normal cohort without fitting on it. | Defect pixel results are identical. V2 adds image threshold calibration and separate normal scores. |
+
+#### Computational comparison from saved reports
+
+| Run | Feature extraction / coreset, or supervised training (s) | Mean inference and stitch (s/frame) | Peak RAM (MiB) | Peak CUDA allocated / reserved (MiB) |
+| --- | --- | ---: | ---: | ---: |
+| V1 PatchCore regular | 1.68 / 0.50 | 0.669 | 2,166 | 345 / 398 |
+| V1 PatchCore red, Phase 3 | 34.12 / 83.35 selected bank | 1.885 | 3,592 | 3,883 / 3,918 |
+| V1 PatchCore green | 34.92 / 85.22 | 1.885 | 3,432 | 2,206 / 2,306 |
+| V1 AnomalyDINO regular | 0.89 / 0.08 | 0.585 | 1,659 | 126 / 442 |
+| V1 AnomalyDINO red | 44.48 / 83.88 | 0.663 | 1,896 | 955 / 1,084 |
+| V1 AnomalyDINO green | 43.99 / 83.90 | 0.669 | 1,993 | 955 / 1,044 |
+| V1 U-Net regular transfer | No regular fit | 0.109 | 1,932 | 550 / 680 |
+| V1 U-Net red | 1,041.37 training | 0.114 | 4,249 | 656 / 760 |
+| V1 U-Net green | 1,019.71 training | 0.110 | 4,233 | 797 / 890 |
+| V2 PatchCore regular | 36.30 / 86.41 | 1.893 | 3,494 | 2,214 / 2,386 |
+| V2 AnomalyDINO regular | 43.57 / 82.77 | 0.653 | 1,857 | 955 / 1,084 |
+| V2 U-Net regular transfer | No regular fit, 0.50 checkpoint load | 0.133 | 1,354 | 270 / 306 |
+
+Times are measured on the recorded GPU. Per-frame times cover map inference and stitching, excluding decode, plots and metric computation. V2 timing means cover all 18 validation frames, versus three fixed-pose frames for regular V1. Peak RAM is the maximum sampled process working set and VRAM peaks are PyTorch allocator statistics across stages recorded for each run. The red PatchCore Phase 3 process included both candidate budgets; the red row uses the selected 128 coreset time and process peaks, so its peak is not directly comparable to a single-fit run. V2 measured inference-stage totals of 35.36 s PatchCore, 13.02 s AnomalyDINO and 3.62 s U-Net, which include per-frame I/O beyond the narrower inference timing. The memory-bank storage numbers exclude model and allocator overhead. [V1 PatchCore resources](patchcore/results/V1/lighting_benchmark_20261124T084630_908213Z/report.json) · [V1 AnomalyDINO resources](anomalydino/results/V1/anomalydino_20261124T091730_300718Z/report.json) · [V1 U-Net resources](unet/results/V1/unet_20261124T095027_917613Z/report.json)
+
+#### Latest comparison and interpretation
+
+Use V2 for regular validation and V1 for red/green. **Regular:** PatchCore led pixel AUROC, aggregate AUPRO, small/medium AUPRO and the three-image validation sensitivity. U-Net led pixel AP and large-component AUPRO/overlap, and had the shortest measured inference time. **Red/green:** PatchCore led pixel AUROC and overall AUPRO on both. U-Net led pixel AP and image AUROC/AP on both. PatchCore led medium/large AUPRO in both colors, and small AUPRO on red. Green U-Net led small AUPRO and small-component overlap at 1% FPR, while red AnomalyDINO led the latter diagnostic on red. U-Net had the strongest large-component 1%-FPR overlap across all lights. AnomalyDINO used a smaller bank and faster inference than PatchCore at the same candidate budget. The choice depends on access to masks, latency budget and whether broad region coverage or precise boundaries matter most.
+
+On saved V2 fixed-pose overlays, PatchCore shows visible responses around structural features and the worktop as well as defects. AnomalyDINO shows background/texture responses and weaker separation in some examples. U-Net predictions on the large visible regions in `regular/0097` align more tightly with the ground-truth overlay, consistent with its strong regular large-component scores. `regular/0004` is useful for showing that the image flag and localization are distinct. Compare the topology of heatmaps using the same RGB and mask. Color brightness is model/display dependent. The three models' scores and size diagnostics give no instance-level detection rate or physical-part accuracy.
+
+#### Demo resources and slide sequence
+
+| Slide use | Verified local resources relative to this journal |
+| --- | --- |
+| Cell and rig overview | Four saved Blender camera views illustrate camera placement and shared tray geometry. These are renders, not viewport/UI screenshots. A screenshot of the Blender control sidebar requires manual capture if the review needs it. [Front left](../data/front_left.png) · [Front right](../data/front_right.png) · [Rear left](../data/rear_left.png) · [Rear right](../data/rear_right.png) · [Inspection cell scene](../synthetic_dataset/battery_tray_inspection_cell.blend) |
+| Clean, defective and aligned mask triplet | Show the fixed regular reference and a visible-defect example. The mask is aligned to the defective frame. [Clean reference](../data/annalyzer_batch_2048/regular/normal/0001.png) · [Defective RGB 0097](../data/annalyzer_batch_2048/regular/bubbles/0097.png) · [Mask 0097](../data/annalyzer_batch_2048/regular/masks/0097.png) |
+| V2 data change | Show two different normal camera/light heights and explain the inherited grouping. [V2 clean train view 0001](../data/annalyzer_regular_normals_v2/normal/0001.png) · [V2 clean validation view 0068](../data/annalyzer_regular_normals_v2/normal/0068.png) · [Metadata](../data/annalyzer_regular_normals_v2/manifest_v2.json) |
+| PatchCore ablation | Show seam smoothing and the larger-bank effect using the red panel, and cite its resource trade-off. [Red visual comparison](patchcore/results/V1/red_phase3_20261124T075750_651308Z/comparison.png) · [Report](patchcore/results/V1/red_phase3_20261124T075750_651308Z/report.json) · [Archived red validation figures](patchcore/results/V1/red_phase3_20261124T075750_651308Z/validation_figures.zip) |
+| V1 lighting examples | Use each panel to compare patterns across lighting while retaining the same-model display scale. [PatchCore panel](patchcore/results/V1/lighting_benchmark_20261124T084630_908213Z/lighting_heatmaps.png) · [AnomalyDINO panel](anomalydino/results/V1/anomalydino_20261124T091730_300718Z/lighting_heatmaps.png) · [U-Net predictions](unet/results/V1/unet_20261124T095027_917613Z/lighting_predictions.png) |
+| V1 cross-model results | Show the main comparison then one size chart. Include the different regular training protocols. [Comparison chart](unet/results/V1/unet_20261124T095027_917613Z/three_model_comparison.png) · [Defect-size chart](unet/results/V1/unet_20261124T095027_917613Z/three_model_defect_sizes.png) · [Comparison CSV](unet/results/V1/unet_20261124T095027_917613Z/three_model_comparison.csv) |
+| V1 training and checkpoint selection | Show red/green BCE+Dice and same-light validation AP trajectories, emphasizing epochs 7 and 9. [Training curves](unet/results/V1/unet_20261124T095027_917613Z/training_curves.png) · [U-Net consolidated JSON](unet/results/V1/unet_20261124T095027_917613Z/report.json) |
+| V1 versus V2 regular | Use `10's delta table for the like-cohort metric comparison. For the figure, use the regular row of each saved V1 method panel and the identical V2 sample ID `0097` using the links below. Compare locations and shape. Display scales vary. A consolidated V1–V2 image panel is unavailable in the reviewed outputs. |
+| V2 threshold and localization | Use the calibration line and the separate normal/defect point rows for each model, followed by the same defective frame, ground truth and three overlays. The chart shows validation scores, including the normals used to set the operating point. |
+
+**V2 matched-frame panel inputs:** [RGB 0097](patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/visuals/regular_0097_image.png) · [Ground truth overlay](patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/visuals/regular_0097_ground_truth_overlay.png) · [PatchCore heatmap](patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/visuals/regular_0097_heatmap.png) · [PatchCore prediction overlay](patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/visuals/regular_0097_heatmap_overlay.png) · [AnomalyDINO heatmap](anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/visuals/regular_0097_heatmap.png) · [AnomalyDINO prediction overlay](anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/visuals/regular_0097_heatmap_overlay.png) · [U-Net heatmap](unet/results/V2/regular_v2_20261124T143148_520300Z/validation/visuals/regular_0097_heatmap.png) · [U-Net prediction overlay](unet/results/V2/regular_v2_20261124T143148_520300Z/validation/visuals/regular_0097_heatmap_overlay.png)
+
+| Model | V2 score plots and machine-readable evidence | Fitted V2 state |
+| --- | --- | --- |
+| PatchCore | [Threshold plot](patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/image_scores.png) · [JSON](patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/report.json) · [CSV](patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/scores.csv) | [Checkpoint](patchcore/results/V2/regular_v2_20261124T140600_238105Z/regular_state.pt) |
+| AnomalyDINO | [Threshold plot](anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/image_scores.png) · [JSON](anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/report.json) · [CSV](anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/scores.csv) | [Checkpoint](anomalydino/results/V2/regular_v2_20261124T141424_324010Z/regular_state.pt) |
+| U-Net | [Threshold plot](unet/results/V2/regular_v2_20261124T143148_520300Z/validation/image_scores.png) · [JSON](unet/results/V2/regular_v2_20261124T143148_520300Z/validation/report.json) · [CSV](unet/results/V2/regular_v2_20261124T143148_520300Z/validation/scores.csv) | [V2 transfer state](unet/results/V2/regular_v2_20261124T143148_520300Z/regular_state.pt) |
+
+| Model | V1 fitted checkpoints |
+| --- | --- |
+| PatchCore | [Regular](patchcore/results/V1/lighting_benchmark_20261124T084630_908213Z/regular/fitted_state.pt) · [Red](patchcore/results/V1/lighting_benchmark_20261124T084630_908213Z/red/fitted_state.pt) · [Green](patchcore/results/V1/lighting_benchmark_20261124T084630_908213Z/green/fitted_state.pt) |
+| AnomalyDINO | [Regular](anomalydino/results/V1/anomalydino_20261124T091730_300718Z/regular/fitted_state.pt) · [Red](anomalydino/results/V1/anomalydino_20261124T091730_300718Z/red/fitted_state.pt) · [Green](anomalydino/results/V1/anomalydino_20261124T091730_300718Z/green/fitted_state.pt) |
+| U-Net | [Red epoch 7, regular transfer source](unet/results/V1/unet_20261124T095027_917613Z/red/best_validation.pt) · [Green epoch 9](unet/results/V1/unet_20261124T095027_917613Z/green/best_validation.pt) |
+
+### 11. Project Progress
+
+**Completed:** synthetic rig and defect generator, RGB/AOV outputs, V1 data integrity and leakage audit, grouped split, native patch preprocessing and stitching, three runnable baselines, V1 three-lighting validation and ablation, completed V2 normal supplement and three V2 regular validation runs. Run identification, resource evidence, thresholds and reproducible artifacts have been recorded.
+
+**Pending:** reserved hold-out execution under a frozen protocol, further study of varied-pose matched defects and near views, independent calibrated real tray acquisition, generalization and operating-point checks, multi-view reconstruction/registration, per-instance correspondence, uncertainty and final thesis reporting.
+
+**Suggested 50% slide breakdown. This is a milestone-weighted estimate requiring student or guide confirmation. It is not a measured university assessment.**
+
+| Milestone | Proposed whole-project weight | Estimated credit to date |
+| --- | ---: | ---: |
+| Problem framing, literature and scope | 8% | 8% |
+| Synthetic rig, annotation, audit and data preprocessing | 17% | 17% |
+| High-level design and three complete baseline implementations | 17% | 17% |
+| Preliminary V1/V2 validation, figures and reproducibility | 8% | 8% |
+| Held-out synthetic evaluation and robustness checks | 10% | 0% |
+| Physical acquisition, calibration and real-part validation | 15% | 0% |
+| Photogrammetry, 2D-to-3D registration and uncertainty | 20% | 0% |
+| Final integration, evidence and thesis delivery | 5% | 0% |
+| **Total** | **100%** | **50% (estimate)** |
+
+### 12. References
+
+The following research references provide model or evaluation context. Experimental claims in this journal use local ANNAlyzer results rather than published benchmark scores.
+
+- [1] K. Roth, L. Pemula, J. Zepeda, B. Schölkopf, T. Brox, and P. Gehler, “Towards total recall in industrial anomaly detection,” in *Proc. IEEE/CVF Conf. Comput. Vis. Pattern Recognit. (CVPR)*, 2022, pp. 14318–14328. [CVF paper](https://openaccess.thecvf.com/content/CVPR2022/html/Roth_Towards_Total_Recall_in_Industrial_Anomaly_Detection_CVPR_2022_paper.html)
+- [2] S. Damm, M. Laszkiewicz, J. Lederer, and A. Fischer, “AnomalyDINO: Boosting patch-based few-shot anomaly detection with DINOv2,” in *Proc. IEEE/CVF Winter Conf. Appl. Comput. Vis. (WACV)*, 2025, pp. 1319–1329. [CVF paper](https://openaccess.thecvf.com/content/WACV2025/html/Damm_AnomalyDINO_Boosting_Patch-Based_Few-Shot_Anomaly_Detection_with_DINOv2_WACV_2025_paper.html)
+- [3] M. Oquab *et al*., “DINOv2: Learning robust visual features without supervision,” *Trans. Mach. Learn. Res.*, 2024. [Paper and author list](https://arxiv.org/abs/2304.07193)
+- [4] O. Ronneberger, P. Fischer, and T. Brox, “U-Net: Convolutional networks for biomedical image segmentation,” in *Proc. MICCAI*, LNCS, vol. 9351, 2015, pp. 234–241. [Authors’ publication page](https://lmbweb.informatik.uni-freiburg.de/Publications/2015/RFB15a/)
+- [5] P. Bergmann, M. Fauser, D. Sattlegger, and C. Steger, “MVTec AD—A comprehensive real-world dataset for unsupervised anomaly detection,” in *Proc. IEEE/CVF CVPR*, 2019, pp. 9592–9600. [CVF paper](https://openaccess.thecvf.com/content_CVPR_2019/html/Bergmann_MVTec_AD_--_A_Comprehensive_Real-World_Dataset_for_Unsupervised_Anomaly_CVPR_2019_paper.html)
+- [6] P. Bergmann, K. Batzner, M. Fauser, D. Sattlegger, and C. Steger, “The MVTec anomaly detection dataset: A comprehensive real-world dataset for unsupervised anomaly detection,” *Int. J. Comput. Vis.*, vol. 129, pp. 1038–1059, 2021, doi: 10.1007/s11263-020-01400-4. [Article and PRO evaluation](https://doi.org/10.1007/s11263-020-01400-4)
+- [7] J. Davis and M. Goadrich, “The relationship between precision-recall and ROC curves,” in *Proc. 23rd Int. Conf. Mach. Learn. (ICML)*, 2006, pp. 233–240, doi: 10.1145/1143844.1143874. [ACM paper](https://doi.org/10.1145/1143844.1143874)
+- [8] D.-C. Hoang *et al*., “Unsupervised industrial anomaly detection using paired well-lit and low-light images,” *J. Comput. Des. Eng.*, vol. 12, no. 5, pp. 41–61, 2025, doi: 10.1093/jcde/qwaf043. Context for illumination variability. The project did not implement the paper's paired-learning method. [Publisher article](https://doi.org/10.1093/jcde/qwaf043)
+- [9] S. Akcay, D. Ameln, A. Vaidya, B. Lakshmanan, N. Ahuja, and U. Genc, “Anomalib: A deep learning library for anomaly detection,” in *Proc. IEEE Int. Conf. Image Process. (ICIP)*, 2022, doi: 10.1109/ICIP46576.2022.9897283. [IEEE paper](https://doi.org/10.1109/ICIP46576.2022.9897283)
+- [10] Blender Foundation, “Render passes,” *Blender Manual*, online reference. [Official render passes and shader AOV documentation](https://docs.blender.org/manual/en/latest/render/layers/passes.html)
+- [11] Open Edge Platform, *Anomalib documentation and PyTorch implementations*, online references. [PatchCore 2.2.0 source](https://github.com/open-edge-platform/anomalib/blob/v2.2.0/src/anomalib/models/image/patchcore/torch_model.py) · [AnomalyDINO 2.5.1 reference](https://anomalib.readthedocs.io/en/lib-v2.5.1/markdown/guides/reference/models/image/anomaly_dino.html)
+- [12] PyTorch Contributors, *TorchVision model reference and weights*, online references. [WideResNet50-2](https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.wide_resnet50_2.html) · [ResNet18](https://docs.pytorch.org/vision/stable/models/generated/torchvision.models.resnet18.html) · [Pinned timm checkpoint](https://huggingface.co/timm/vit_small_patch14_dinov2.lvd142m/blob/4610ca143709d58a633b6397a74412c2c3842454/model.safetensors)
+- [13] scikit-learn Developers, *Model evaluation API*, online reference. [Average precision definition](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html)
+- [14] ANNAlyzer project, “Synthetic battery tray datasets, audit and experiment records,” local project artifacts, 2026. [V1 dataset configuration](../data/annalyzer_batch_2048/dataset.json) · [V1 audit manifest](dataset_audit_manifest_v1.jsonl) · [V2 renderer configuration and duplicate audit](../data/annalyzer_regular_normals_v2/dataset.json) · [V2 manifest](../data/annalyzer_regular_normals_v2/manifest_v2.json)
+
+### 13. Any Other Information
+
+- **Reference coverage versus localization quality.** V2 gives both normal-only models much larger reference banks and improved regular localization on the same three development examples. A production decision needs more labeled defect configurations, clean hold-out coverage and independent parts. A single synthetic schedule and checkpoint per model do not quantify seed, part or camera variation.
+- **Accuracy versus usability.** PatchCore's V2 AUPRO is strongest overall on the fixed-pose set, while U-Net's AP and large-region overlap favor precise masks. AnomalyDINO provides a smaller memory footprint and lower latency than PatchCore. The normal-only methods operate without defect labels. Comparable results under no-label and supervised conditions must retain those labels in slide captions.
+- **Threshold and instance limits.** The maximum-of-15 rule is sample-dependent and the validation FPR is forced to zero. A 1% diagnostic background-pixel FPR is not an image operating threshold. Visible connected components are occupancy regions and have no verified mapping to individual physical blisters. False alarms, instance recall and robustness at a chosen physical operating point still need independent measurement.
+- **Reproducibility.** Preserve split/manifest hashes, immutable source data, pinned pretrained weights, seed 24117 and raw outputs. The three V2 validation reports carry the same data fingerprints and Git revision `7f47467943ed08d82b9493867ecf60042d1adba1`. The current working Blender file differs by SHA-256 from the scene snapshot recorded in both render configurations. Use those recorded fingerprints when reproducing the batch and identify any newer scene separately.
+- **Future 3D interface.** Preserve original pixel coordinate convention, calibrated intrinsics/extrinsics and the physical scale. A proposed mapping can intersect a pixel ray with registered part geometry or triangulate evidence across views. Confirm surface correspondence, occlusion handling and mapping uncertainty on independent physical trays before using a 2D anomaly map as a part-coordinate localization result.
+
+### 14. Presentation Readiness Summary
+
+| University PPT heading | Coverage | Journal material and evidence | Manual input |
+| --- | --- | --- | --- |
+| Title / Review-3 identification | Partial | Opening of this section and [university template](../UE25CS7A1A_%20REVIEW%203.pptx) | Official project title/ID, student name/SRN and guide. Add reviewers/date if required. |
+| Abstract and Scope | Complete | §1, with the [scene overview](README.md#blender-scene) | Confirm institutional wording and final scope. |
+| Suggestions from Review-2 | Missing | §2 records the search and the feedback capture fields. | Supply verified remarks and the agreed action for each. |
+| Base Model Implementation | Complete | §3 algorithms, [PatchCore report](patchcore/results/V1/lighting_benchmark_20261124T084630_908213Z/report.json), [AnomalyDINO report](anomalydino/results/V1/anomalydino_20261124T091730_300718Z/report.json), [U-Net report](unet/results/V1/unet_20261124T095027_917613Z/report.json) | Select the depth of model explanation. |
+| Proposed Methodology / Approach | Complete | §4, [V1 sample metadata](../data/annalyzer_batch_2048/samples.json), [V2 audit and metadata](../data/annalyzer_regular_normals_v2/dataset.json) | Choose the rig images and one RGB/mask example. |
+| Design Approach | Complete | §5 and §10; [sampling/stitching evidence](patchcore/results/V1/red_phase3_20261124T075750_651308Z/comparison.png) | Select one design trade-off to emphasize. |
+| Design Constraints, Assumptions & Dependencies | Complete | §6, §9 and saved resource tables in §10 | Confirm any additional sponsor data or deployment constraints. |
+| Architecture | Complete | §7 implemented/proposed dataflow diagram | Export the diagram to the slide format. |
+| Design Description | Complete for implemented system; database ER and standalone GUI not applicable | §8 class and module diagrams, schemas and [V2 workflow](v2_workflow.py) | Capture the actual Blender sidebar if a UI slide is desired. |
+| Technologies Used | Complete | §9 and per-model [PatchCore](patchcore/V1/README.md), [AnomalyDINO](anomalydino/V1/README.md) and [U-Net](unet/V1/README.md) environment notes | Confirm intended future photogrammetry tool choice with guide. |
+| Project Demo | Complete for saved validation; held-out test results unavailable | §10 plots, [V1 comparison](unet/results/V1/unet_20261124T095027_917613Z/three_model_comparison.png), [V2 PatchCore score plot](patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/image_scores.png) and model-specific overlays | Select matched visuals; optionally capture a live run without starting a new benchmark. |
+| Project Progress | Partial | §11 completed/pending milestones and the proposed 50% weighting | Confirm percentages with student/guide. |
+| References | Complete | §12 IEEE-style research/software/local dataset citations | Match numbered citations to slides. |
+| Any Other Information | Complete | §13 limitations, reproducibility and 3D scope | Add approved institutional or sponsor notes, if any. |
+| Thank You | Not applicable to technical evidence | [Template closing slide](../UE25CS7A1A_%20REVIEW%203.pptx) | Add acknowledgments or contact details if desired. |
+
+**Executive summary.** ANNAlyzer simulates an inspection cell for blister detection on an injection-moulded battery tray. Its V1 data comprise 501 unique RGB images and 300 aligned masks, with a grouped red/green benchmark and one independent regular reference. V2 adds 99 regular normal captures and enables 70/15/15 normal fitting, calibration and reserved testing. Native 512 px tiles and Gaussian stitching retain detail in 2048 px frames. PatchCore, AnomalyDINO and a supervised ResNet18 U-Net are implemented and validated. On the same three regular defects in V2, PatchCore achieved 0.9610 pixel AUROC and 0.9071 AUPRO. The unchanged red-transfer U-Net achieved 0.7834 pixel AP and the strongest large-defect-region scores. AnomalyDINO improved over its V1 regular bank with faster inference and a smaller bank than PatchCore. Real-part validation, held-out evaluation and calibrated 2D-to-3D mapping remain open.
+
+## Saved V2 run results · 2026-11-24
+
+Imported from [GitHub main snapshot](https://github.com/nischayvm/Thesis-Kautex/commit/ecab15c57ba76f2e2c5965dce565d43033ad0c55). Pixel metrics pool the fixed-pose defective frames. Size columns show AUPRO / mean component overlap at 1% background pixel FPR. AUPRO integrates up to 30% background pixel FPR. Image decisions use the saved threshold for varied normals and fixed-pose defects.
+
+### Validation and calibration
+
+The highest normal validation score sets the threshold. The validation false-positive rate is zero by construction.
+
+| Model / UTC run ID | Pixel AUROC | Pixel AP | AUPRO | Image AUROC / AP | Small | Medium | Large |
+| --- | ---: | ---: | ---: | --- | --- | --- | --- |
+| AnomalyDINO / `regular_v2_20261124T141424_324010Z` | 0.8194 | 0.1946 | 0.7163 | N/A / N/A | 0.8737 / 0.6651 | 0.8069 / 0.5308 | 0.5466 / 0.2726 |
+| PatchCore / `regular_v2_20261124T140600_238105Z` | 0.9610 | 0.2710 | 0.9071 | N/A / N/A | 0.9805 / 0.8402 | 0.8959 / 0.8344 | 0.8661 / 0.3890 |
+| U-Net / `regular_v2_20261124T143148_520300Z` | 0.9586 | 0.7834 | 0.8198 | N/A / N/A | 0.7121 / 0.6444 | 0.7401 / 0.6383 | 0.9486 / 0.9317 |
+
+| Model / UTC run ID | Threshold | TN / FP | TP / FN | Sensitivity / FPR | Mean inference (s/frame) | Bank rows × features |
+| --- | ---: | ---: | ---: | --- | ---: | --- |
+| AnomalyDINO / `regular_v2_20261124T141424_324010Z` | 0.27620628 | 15 / 0 | 1 / 2 | 33.3% / 0.0% | 0.653 | 22400 × 384 |
+| PatchCore / `regular_v2_20261124T140600_238105Z` | 21.54318047 | 15 / 0 | 3 / 0 | 100.0% / 0.0% | 1.893 | 22400 × 1536 |
+| U-Net / `regular_v2_20261124T143148_520300Z` | 0.99971962 | 15 / 0 | 2 / 1 | 66.7% / 0.0% | 0.133 | N/A |
+
+- **AnomalyDINO / `regular_v2_20261124T141424_324010Z`**. [Report](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/report.json) · [Scores CSV](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/scores.csv) · [Score plot](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/image_scores.png) <!-- v2-result-report: Anamoly_detection/anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/report.json -->
+- **PatchCore / `regular_v2_20261124T140600_238105Z`**. [Report](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/report.json) · [Scores CSV](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/scores.csv) · [Score plot](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/image_scores.png) <!-- v2-result-report: Anamoly_detection/patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/report.json -->
+- **U-Net / `regular_v2_20261124T143148_520300Z`**. [Report](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/unet/results/V2/regular_v2_20261124T143148_520300Z/validation/report.json) · [Scores CSV](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/unet/results/V2/regular_v2_20261124T143148_520300Z/validation/scores.csv) · [Score plot](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/unet/results/V2/regular_v2_20261124T143148_520300Z/validation/image_scores.png) <!-- v2-result-report: Anamoly_detection/unet/results/V2/regular_v2_20261124T143148_520300Z/validation/report.json -->
