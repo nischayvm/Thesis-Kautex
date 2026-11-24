@@ -50,3 +50,29 @@ Git LFS also stores the two selected U-Net checkpoints. The full-resolution U-Ne
 ## V2 regular-light workflow
 
 V2 expands the regular-light normal cohort to 70 training, 15 validation and 15 test views. PatchCore and AnomalyDINO use these training normals for separate fits. U-Net uses the frozen red-to-regular transfer checkpoint. Each model stores V1 and V2 outputs in its own versioned results folders. [Launchers and cohort protocol](Anamoly_detection/README.md#regular-light-v2-models)
+
+## V3 three-lighting validation
+
+V3 fits PatchCore and AnomalyDINO separately for red, green, and regular illumination using clean training images. U-Net trains separate supervised red and green models and transfers its selected red checkpoint to regular lighting. Red and green each evaluate 15 clean and 15 defective frames from the frozen split. Regular uses 15 varied clean views for threshold calibration and three fixed-pose defects for pixel metrics. Image-ranking metrics for regular lighting are unavailable because the normal and defective cohorts use different capture protocols.
+
+| Lighting | Model | Pixel AUROC | Pixel AP | AUPRO | Image AUROC | Image AP |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Red | PatchCore | 0.9486 | 0.2960 | 0.8177 | 0.9200 | 0.9314 |
+| Red | AnomalyDINO | 0.8378 | 0.1346 | 0.6304 | 0.8711 | 0.8857 |
+| Red | U-Net | 0.9090 | 0.7456 | 0.5897 | 0.9733 | 0.9810 |
+| Green | PatchCore | 0.9455 | 0.2930 | 0.8346 | 0.9156 | 0.9220 |
+| Green | AnomalyDINO | 0.8317 | 0.1656 | 0.6867 | 0.8667 | 0.8873 |
+| Green | U-Net | 0.9056 | 0.7408 | 0.8099 | 1.0000 | 1.0000 |
+| Regular | PatchCore | 0.9610 | 0.2710 | 0.9071 | N/A | N/A |
+| Regular | AnomalyDINO | 0.8194 | 0.1946 | 0.7163 | N/A | N/A |
+| Regular | U-Net transfer | 0.9586 | 0.7834 | 0.8198 | N/A | N/A |
+
+AUPRO uses a 30% background-pixel FPR limit. PatchCore led pixel AUROC and AUPRO on all three validation cohorts. U-Net led pixel AP across all three and image AUROC and AP on red and green. These are synthetic validation results.
+
+| Model | Red | Green | Regular |
+| --- | --- | --- | --- |
+| PatchCore | [Report](Anamoly_detection/patchcore/results/V3/all_lights_v3_20261124T193302_112321Z/red/validation/report.json) | [Report](Anamoly_detection/patchcore/results/V3/all_lights_v3_20261124T193302_112321Z/green/validation/report.json) | [Report](Anamoly_detection/patchcore/results/V3/all_lights_v3_20261124T193302_112321Z/regular/validation/report.json) |
+| AnomalyDINO | [Report](Anamoly_detection/anomalydino/results/V3/all_lights_v3_20261124T194518_585551Z/red/validation/report.json) | [Report](Anamoly_detection/anomalydino/results/V3/all_lights_v3_20261124T194518_585551Z/green/validation/report.json) | [Report](Anamoly_detection/anomalydino/results/V3/all_lights_v3_20261124T194518_585551Z/regular/validation/report.json) |
+| U-Net | [Report](Anamoly_detection/unet/results/V3/all_lights_v3_20261124T195634_269837Z/red/validation/report.json) | [Report](Anamoly_detection/unet/results/V3/all_lights_v3_20261124T195634_269837Z/green/validation/report.json) | [Report](Anamoly_detection/unet/results/V3/all_lights_v3_20261124T195634_269837Z/regular/validation/report.json) |
+
+Download the HTML report and open it in a browser for interactive metric charts and same-frame heatmaps. The Excel workbook includes editable charts, per-image scores, and training and resource data. Source images, ground-truth masks, and raw score maps remain local. [V3 HTML report](Anamoly_detection/reports/V3_validation_report.html) · [V3 Excel workbook](Anamoly_detection/reports/excel/V3_results.xlsx) · [U-Net V3 training curves](Anamoly_detection/unet/results/V3/all_lights_v3_20261124T195634_269837Z/training_curves.png) · [V3 artifact bundles](Anamoly_detection/benchmark_exports)
