@@ -1,0 +1,71 @@
+{
+  "protocol": "red-trained U-Net transferred to regular; zero regular fit frames",
+  "training_normal_count": 0,
+  "training_defect_count": 0,
+  "validation_ids": [
+    "regular/0004",
+    "regular/0074",
+    "regular/0097"
+  ],
+  "source_checkpoint": "red/best_validation.pt",
+  "checkpoint_sha256": "53ceae4d67b0f9eb81f645c28d1d4655e9bd968e417204770e9288f56994a18d",
+  "source_epoch": 7,
+  "metrics": {
+    "pixel_auroc": 0.9585527906147492,
+    "pixel_ap": 0.7834499349382543,
+    "aupro": 0.8198250258555176,
+    "positive_pixels": 106761,
+    "negative_pixels": 12476151,
+    "size_specific": {
+      "small_lt64": {
+        "components": 14,
+        "aupro": 0.7121400632898877,
+        "mean_overlap_at_1pct_fpr": 0.6443768996960476
+      },
+      "medium_64_to_511": {
+        "components": 15,
+        "aupro": 0.740059037045274,
+        "mean_overlap_at_1pct_fpr": 0.638328837954597
+      },
+      "large_ge512": {
+        "components": 21,
+        "aupro": 0.9485907071927929,
+        "mean_overlap_at_1pct_fpr": 0.9316726970038544
+      }
+    },
+    "image_auroc": null,
+    "image_ap": null,
+    "mean_inference_s": 0.10915493333353272
+  },
+  "predictions": [
+    {
+      "sample_id": "regular/0004",
+      "role": "bubbles",
+      "image_score": 0.9967092275619507,
+      "inference_s": 0.10700739999992948,
+      "probability_path": "raw/0004_bubbles_probability.npy"
+    },
+    {
+      "sample_id": "regular/0074",
+      "role": "bubbles",
+      "image_score": 0.999983549118042,
+      "inference_s": 0.10838839999996708,
+      "probability_path": "raw/0074_bubbles_probability.npy"
+    },
+    {
+      "sample_id": "regular/0097",
+      "role": "bubbles",
+      "image_score": 0.9999943971633911,
+      "inference_s": 0.11206900000070164,
+      "probability_path": "raw/0097_bubbles_probability.npy"
+    }
+  ],
+  "measurements": {
+    "red_to_regular_validation": {
+      "seconds": 0.48877600000014354,
+      "rss_peak_mib": 1932.1796875,
+      "cuda_peak_allocated_mib": 550.04931640625,
+      "cuda_peak_reserved_mib": 680.0
+    }
+  }
+}

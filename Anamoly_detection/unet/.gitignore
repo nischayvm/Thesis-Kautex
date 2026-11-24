@@ -1,0 +1,7 @@
+/.python/
+/.uv-cache/
+/.venv/
+/.mpl-cache/
+/__pycache__/
+/resnet18-f37072fd.pth
+/runs/

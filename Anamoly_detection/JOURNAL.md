@@ -278,3 +278,57 @@ Ran `.\.venv\Scripts\python.exe -u run.py` from `Anamoly_detection/anomalydino`.
 [Consolidated report](anomalydino/runs/anomalydino_20261124T091730_300718Z/report.json) · [Cross-model metrics CSV](anomalydino/runs/anomalydino_20261124T091730_300718Z/model_comparison.csv) · [Cross-model metric chart](anomalydino/runs/anomalydino_20261124T091730_300718Z/model_comparison.png) · [Defect-size chart](anomalydino/runs/anomalydino_20261124T091730_300718Z/defect_size_comparison.png) · [Heatmaps and ground-truth panel](anomalydino/runs/anomalydino_20261124T091730_300718Z/lighting_heatmaps.png)
 
 [Fitted regular state](anomalydino/runs/anomalydino_20261124T091730_300718Z/regular/fitted_state.pt) · [Fitted red state](anomalydino/runs/anomalydino_20261124T091730_300718Z/red/fitted_state.pt) · [Fitted green state](anomalydino/runs/anomalydino_20261124T091730_300718Z/green/fitted_state.pt)
+
+## 2026-11-24 · Model 3 supervised U-Net
+
+PatchCore and AnomalyDINO are the frozen comparison references. Their implementation, environment metadata, fitted states and completed outputs are fingerprinted separately. U-Net uses its own pinned Python 3.12.13, PyTorch 2.9.1+cu128 and TorchVision 0.24.1+cu128 environment. [PatchCore freeze](anomalydino/patchcore_freeze_v1.json) · [AnomalyDINO freeze](unet/anomalydino_freeze_v1.json) · [U-Net setup](unet/README.md)
+
+The encoder is ResNet18 initialized with TorchVision ImageNet1K V1 weights. The U-Net decoder uses skip connections and fixed channel widths of 128, 64, 32, 16 and 8 from coarse to fine. Both encoder and decoder are trainable. Loss is BCE with logits plus per-tile soft Dice loss with smoothing 1 and equal coefficients. AdamW uses learning rate 1e-4 and weight decay 0.01. Each lighting fit uses 10 epochs, batch size 4, CUDA FP16 autocast and gradient scaling, FP32 loss and maps, and seed 24117. The batch-size-4 forward and backward smoke test passed at native tile size.
+
+Red and green each use 70 normal and 70 defective audited source images from the frozen training IDs. Each epoch visits all 3,500 native training tiles in a seeded shuffle. Clean targets are all zero, and defective targets use the source binary masks. The 15 clean and 15 defective frames of each colored validation fold are used to select the highest full-frame pixel AP, with the earliest checkpoint winning ties. Regular is a separately labeled red-to-regular transfer evaluation on the three existing development defects. Zero regular frames enter fitting or checkpoint selection. The final test folds remain reserved.
+
+All three methods share the frozen split and validation cohorts, 512 × 512 source coordinates, 128 px overlap, Gaussian stitching with sigma 128 px, and the same pixel and connected-component metric definitions. U-Net's one-channel logits become probabilities before stitching. Image score is the maximum across tiles of the mean of the top 1% of tile probabilities. Pixel AP selection and final U-Net metrics use 65,536 bins across the full [0, 1] probability range. Prior results retain their original score ranges. Regular image AUROC and AP are N/A for all three methods because the validation cohort has zero independent normals. The U-Net transfer also differs in which lighting trained the model and in labelled defect supervision.
+
+Run from `Anamoly_detection/unet` using the locked environment.
+
+```powershell
+.\.venv\Scripts\python.exe -u run.py
+.\.venv\Scripts\python.exe -u render_results.py <run-directory>
+```
+
+### Three-model validation comparison
+
+| Validation lighting | Model and training protocol | Pixel AUROC | Pixel AP | AUPRO at 30% FPR | Image AUROC | Image AP |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Regular | PatchCore, fixed normal reference | 0.8061 | 0.0534 | 0.7015 | N/A | N/A |
+| Regular | AnomalyDINO, fixed normal reference | 0.7437 | 0.0824 | 0.5385 | N/A | N/A |
+| Regular | U-Net, red-to-regular transfer | 0.9586 | 0.7834 | 0.8198 | N/A | N/A |
+| Red | PatchCore, normal-only | 0.9486 | 0.2960 | 0.8177 | 0.9200 | 0.9314 |
+| Red | AnomalyDINO, normal-only | 0.8378 | 0.1346 | 0.6304 | 0.8711 | 0.8857 |
+| Red | U-Net, supervised red | 0.9090 | 0.7456 | 0.5897 | 0.9733 | 0.9810 |
+| Green | PatchCore, normal-only | 0.9455 | 0.2930 | 0.8346 | 0.9156 | 0.9220 |
+| Green | AnomalyDINO, normal-only | 0.8317 | 0.1656 | 0.6867 | 0.8667 | 0.8873 |
+| Green | U-Net, supervised green | 0.9056 | 0.7408 | 0.8099 | 1.0000 | 1.0000 |
+
+U-Net had the highest pixel AP and colored image-level scores on these validation folds. PatchCore had the highest pixel AUROC and aggregate AUPRO on both colored folds. In particular, red U-Net was effective on the largest mask regions and had substantially lower overlap on small regions. The three-frame regular transfer result uses the red model selected on red validation. Its supervised source training and the smaller regular validation cohort make it a separate protocol from the one-reference regular baselines. The perfect green image ranking is based on the 30 synthetic validation frames.
+
+| U-Net validation lighting | Small AUPRO / overlap¹ | Medium AUPRO / overlap¹ | Large AUPRO / overlap¹ |
+| --- | ---: | ---: | ---: |
+| Regular transfer | 0.712 / 0.644 | 0.740 / 0.638 | 0.949 / 0.932 |
+| Red | 0.249 / 0.196 | 0.694 / 0.679 | 0.828 / 0.822 |
+| Green | 0.791 / 0.754 | 0.806 / 0.789 | 0.832 / 0.817 |
+
+¹ AUPRO integrates to 30% background FPR. Overlap is the mean component overlap at the diagnostic 1% FPR. Size bands are <64, 64–511 and ≥512 px². Regular, red and green contain 50, 222 and 223 visible validation mask regions, respectively.
+
+### Checkpoint selection and resource use
+
+| Fit | Best epoch | Best validation pixel AP | Training time | Epoch validation time | Peak process RAM | Peak CUDA allocated / reserved |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Red | 7 | 0.745649 | 1,041.37 s | 46.59 s | 4,249 MiB | 656 / 760 MiB |
+| Green | 9 | 0.740780 | 1,019.71 s | 42.28 s | 4,233 MiB | 797 / 890 MiB |
+
+Training times sum the 10 measured training passes and exclude data loading, validation and checkpoint writes. Mean inference including stitching was 0.114 s per frame for red, 0.110 s for green and 0.109 s for regular transfer. U-Net used FP16 autocast and up to four tiles per inference batch. The earlier methods used one tile per batch. Both selected U-Net checkpoints reproduced their epoch pixel AP when reloaded. The transfer report records the exact red checkpoint hash and epoch. Final train BCE + Dice decreased from 1.357 to 0.911 for red and from 1.359 to 0.930 for green.
+
+The completed run contains 63 native 2048 × 2048 FP32 probability arrays and the full-resolution ground-truth masks, ground-truth overlays, probability heatmaps and prediction overlays for all 33 defective validation frames. Both frozen baseline inventories matched after U-Net. [Three-model CSV](unet/runs/unet_20261124T095027_917613Z/three_model_comparison.csv) · [Validation comparison chart](unet/runs/unet_20261124T095027_917613Z/three_model_comparison.png) · [Size-specific comparison](unet/runs/unet_20261124T095027_917613Z/three_model_defect_sizes.png) · [Training curves](unet/runs/unet_20261124T095027_917613Z/training_curves.png) · [Prediction and ground-truth panel](unet/runs/unet_20261124T095027_917613Z/lighting_predictions.png) · [Detailed U-Net report](unet/runs/unet_20261124T095027_917613Z/report.json)
+
+[Best red checkpoint](unet/runs/unet_20261124T095027_917613Z/red/best_validation.pt) · [Best green checkpoint](unet/runs/unet_20261124T095027_917613Z/green/best_validation.pt)

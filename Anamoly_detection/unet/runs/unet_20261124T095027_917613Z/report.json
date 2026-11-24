@@ -1,0 +1,1319 @@
+{
+  "configuration": {
+    "split_sha256": "3234ec7635558c888f863aefe29d263399a47db5df2cba5aa4f5147a763c2677",
+    "weight_sha256": "f37072fd47e89c5e827621c5baffa7500819f7896bbacec160b1a16c560e07ec",
+    "runner_sha256": "4d52780063657963b61827ff9f0aa0e617608863b8ac20b0d4f8a30911da8e12",
+    "model_sha256": "81f20f9bbb78a55edcd8917cab77e8290ff99695d68bbf94e5ec96cce130f08e",
+    "lock_sha256": "af5f67a7f292c17f53cd868862d3fe96c85bf52fc2ac258e3a8f17a5e4103572",
+    "architecture": "U-Net with ImageNet1K V1 ResNet18",
+    "decoder_channels": [
+      128,
+      64,
+      32,
+      16,
+      8
+    ],
+    "trainable_encoder": true,
+    "loss": "BCE with logits plus per-tile soft Dice loss, smooth 1",
+    "optimizer": "AdamW",
+    "weight_decay": 0.01,
+    "learning_rate": 0.0001,
+    "epochs": 10,
+    "batch_size": 4,
+    "precision": "CUDA FP16 autocast with GradScaler; FP32 losses and maps",
+    "seed": 24117,
+    "tile": 512,
+    "stride": 384,
+    "overlap": 128,
+    "gaussian_sigma_px": 128,
+    "rgb_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "rgb_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "image_score": "max tile mean of highest 1% probabilities",
+    "checkpoint_selection": "max same-light validation pixel AP; earliest on ties",
+    "histogram_bins": 65536,
+    "probability_range": [
+      0,
+      1
+    ],
+    "aupro_fpr_limit": 0.3,
+    "diagnostic_fpr": 0.01,
+    "regular_protocol": "red-to-regular transfer"
+  },
+  "environment": {
+    "python": "3.12.13",
+    "torch": "2.9.1+cu128",
+    "torchvision": "0.24.1+cu128",
+    "cuda": "12.8",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  },
+  "git_base": "282b1040d87b375767e74c2df5bd44474b1f8de6",
+  "baseline_report_hashes": {
+    "patchcore": "b709041fde6ebde12412f56c8890028cdaa10df3530aa2db7c83eaf8ab8ef2d6",
+    "anomalydino": "a1acdc9989cf02777b4aa28e4d944bb9d97f12dcc71e3cbe01d330074d52b18d"
+  },
+  "lighting": {
+    "red": {
+      "protocol": "supervised within-red",
+      "train_ids": [
+        "red/0001",
+        "red/0003",
+        "red/0004",
+        "red/0005",
+        "red/0006",
+        "red/0007",
+        "red/0010",
+        "red/0011",
+        "red/0012",
+        "red/0013",
+        "red/0014",
+        "red/0015",
+        "red/0016",
+        "red/0017",
+        "red/0018",
+        "red/0021",
+        "red/0022",
+        "red/0023",
+        "red/0024",
+        "red/0025",
+        "red/0029",
+        "red/0030",
+        "red/0032",
+        "red/0034",
+        "red/0035",
+        "red/0037",
+        "red/0038",
+        "red/0039",
+        "red/0040",
+        "red/0043",
+        "red/0044",
+        "red/0048",
+        "red/0049",
+        "red/0052",
+        "red/0053",
+        "red/0054",
+        "red/0055",
+        "red/0056",
+        "red/0057",
+        "red/0058",
+        "red/0059",
+        "red/0060",
+        "red/0062",
+        "red/0063",
+        "red/0064",
+        "red/0066",
+        "red/0067",
+        "red/0070",
+        "red/0072",
+        "red/0073",
+        "red/0074",
+        "red/0076",
+        "red/0077",
+        "red/0078",
+        "red/0079",
+        "red/0080",
+        "red/0081",
+        "red/0082",
+        "red/0083",
+        "red/0084",
+        "red/0085",
+        "red/0086",
+        "red/0088",
+        "red/0089",
+        "red/0091",
+        "red/0092",
+        "red/0093",
+        "red/0094",
+        "red/0096",
+        "red/0100"
+      ],
+      "training_normal_count": 70,
+      "training_defect_count": 70,
+      "validation_ids": [
+        "red/0008",
+        "red/0019",
+        "red/0026",
+        "red/0027",
+        "red/0028",
+        "red/0041",
+        "red/0042",
+        "red/0045",
+        "red/0046",
+        "red/0061",
+        "red/0068",
+        "red/0069",
+        "red/0071",
+        "red/0075",
+        "red/0098"
+      ],
+      "best_epoch": 7,
+      "best_checkpoint": "red/best_validation.pt",
+      "checkpoint_sha256": "53ceae4d67b0f9eb81f645c28d1d4655e9bd968e417204770e9288f56994a18d",
+      "metrics": {
+        "pixel_auroc": 0.9090163901758471,
+        "pixel_ap": 0.7456489194377347,
+        "aupro": 0.5896580767988304,
+        "positive_pixels": 457885,
+        "negative_pixels": 125371235,
+        "size_specific": {
+          "small_lt64": {
+            "components": 78,
+            "aupro": 0.24936196894715648,
+            "mean_overlap_at_1pct_fpr": 0.19647193858105208
+          },
+          "medium_64_to_511": {
+            "components": 58,
+            "aupro": 0.6935989820638455,
+            "mean_overlap_at_1pct_fpr": 0.6794519922669118
+          },
+          "large_ge512": {
+            "components": 86,
+            "aupro": 0.8281990524622925,
+            "mean_overlap_at_1pct_fpr": 0.8219782201164287
+          }
+        },
+        "image_auroc": 0.9733333333333334,
+        "image_ap": 0.9809523809523809,
+        "mean_inference_s": 0.11435297333355265
+      },
+      "predictions": [
+        {
+          "sample_id": "red/0008",
+          "role": "normal",
+          "image_score": 0.33147329092025757,
+          "inference_s": 0.1162586000009469,
+          "probability_path": "raw/0008_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0008",
+          "role": "bubbles",
+          "image_score": 0.7659935355186462,
+          "inference_s": 0.1161986999995861,
+          "probability_path": "raw/0008_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0019",
+          "role": "normal",
+          "image_score": 0.3338145315647125,
+          "inference_s": 0.11565280000104394,
+          "probability_path": "raw/0019_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0019",
+          "role": "bubbles",
+          "image_score": 0.9999979138374329,
+          "inference_s": 0.11235550000128569,
+          "probability_path": "raw/0019_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0026",
+          "role": "normal",
+          "image_score": 0.4569293260574341,
+          "inference_s": 0.113211500000034,
+          "probability_path": "raw/0026_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0026",
+          "role": "bubbles",
+          "image_score": 0.999905526638031,
+          "inference_s": 0.11396419999982754,
+          "probability_path": "raw/0026_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0027",
+          "role": "normal",
+          "image_score": 0.15917950868606567,
+          "inference_s": 0.11471140000139712,
+          "probability_path": "raw/0027_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0027",
+          "role": "bubbles",
+          "image_score": 0.9997493028640747,
+          "inference_s": 0.11380430000099295,
+          "probability_path": "raw/0027_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0028",
+          "role": "normal",
+          "image_score": 0.45149314403533936,
+          "inference_s": 0.11265319999984058,
+          "probability_path": "raw/0028_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0028",
+          "role": "bubbles",
+          "image_score": 0.9999738931655884,
+          "inference_s": 0.11556330000166781,
+          "probability_path": "raw/0028_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0041",
+          "role": "normal",
+          "image_score": 0.5893672108650208,
+          "inference_s": 0.11343990000023041,
+          "probability_path": "raw/0041_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0041",
+          "role": "bubbles",
+          "image_score": 0.9999925494194031,
+          "inference_s": 0.1145422999998118,
+          "probability_path": "raw/0041_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0042",
+          "role": "normal",
+          "image_score": 0.9028822779655457,
+          "inference_s": 0.11479860000144981,
+          "probability_path": "raw/0042_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0042",
+          "role": "bubbles",
+          "image_score": 0.9999088644981384,
+          "inference_s": 0.11441449999983888,
+          "probability_path": "raw/0042_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0045",
+          "role": "normal",
+          "image_score": 0.08933088183403015,
+          "inference_s": 0.11297630000080972,
+          "probability_path": "raw/0045_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0045",
+          "role": "bubbles",
+          "image_score": 0.999436616897583,
+          "inference_s": 0.11655120000068564,
+          "probability_path": "raw/0045_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0046",
+          "role": "normal",
+          "image_score": 0.9921813011169434,
+          "inference_s": 0.11264499999924737,
+          "probability_path": "raw/0046_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0046",
+          "role": "bubbles",
+          "image_score": 0.999782919883728,
+          "inference_s": 0.11526039999989734,
+          "probability_path": "raw/0046_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0061",
+          "role": "normal",
+          "image_score": 0.9752095937728882,
+          "inference_s": 0.11633520000032149,
+          "probability_path": "raw/0061_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0061",
+          "role": "bubbles",
+          "image_score": 0.9999911189079285,
+          "inference_s": 0.11517459999959101,
+          "probability_path": "raw/0061_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0068",
+          "role": "normal",
+          "image_score": 0.8927087783813477,
+          "inference_s": 0.11420510000061768,
+          "probability_path": "raw/0068_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0068",
+          "role": "bubbles",
+          "image_score": 0.999988317489624,
+          "inference_s": 0.11319399999956659,
+          "probability_path": "raw/0068_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0069",
+          "role": "normal",
+          "image_score": 0.4699450731277466,
+          "inference_s": 0.11309520000031625,
+          "probability_path": "raw/0069_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0069",
+          "role": "bubbles",
+          "image_score": 0.9999920725822449,
+          "inference_s": 0.11510599999928672,
+          "probability_path": "raw/0069_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0071",
+          "role": "normal",
+          "image_score": 0.9769313335418701,
+          "inference_s": 0.11376759999984642,
+          "probability_path": "raw/0071_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0071",
+          "role": "bubbles",
+          "image_score": 0.9999305605888367,
+          "inference_s": 0.11299920000055863,
+          "probability_path": "raw/0071_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0075",
+          "role": "normal",
+          "image_score": 0.4442213475704193,
+          "inference_s": 0.1123210999994626,
+          "probability_path": "raw/0075_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0075",
+          "role": "bubbles",
+          "image_score": 0.9998712539672852,
+          "inference_s": 0.11730369999895629,
+          "probability_path": "raw/0075_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "red/0098",
+          "role": "normal",
+          "image_score": 0.9938998818397522,
+          "inference_s": 0.11340089999976044,
+          "probability_path": "raw/0098_normal_probability.npy"
+        },
+        {
+          "sample_id": "red/0098",
+          "role": "bubbles",
+          "image_score": 0.9999088644981384,
+          "inference_s": 0.11468489999970188,
+          "probability_path": "raw/0098_bubbles_probability.npy"
+        }
+      ],
+      "history": [
+        {
+          "epoch": 1,
+          "bce": 0.36536625027656555,
+          "dice_loss": 0.9917856454849243,
+          "bce_plus_dice": 1.3571518957614899,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 65536.0,
+          "validation_pixel_ap": 0.011706084423397278,
+          "measurements": {
+            "training": {
+              "seconds": 122.36418860000049,
+              "rss_peak_mib": 4147.87890625,
+              "cuda_peak_allocated_mib": 656.40576171875,
+              "cuda_peak_reserved_mib": 760.0
+            },
+            "validation": {
+              "seconds": 5.514630000001489,
+              "rss_peak_mib": 4247.74609375,
+              "cuda_peak_allocated_mib": 408.52392578125,
+              "cuda_peak_reserved_mib": 760.0
+            }
+          }
+        },
+        {
+          "epoch": 2,
+          "bce": 0.259598970413208,
+          "dice_loss": 0.9916294813156128,
+          "bce_plus_dice": 1.2512284517288208,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 65536.0,
+          "validation_pixel_ap": 0.1340139377855295,
+          "measurements": {
+            "training": {
+              "seconds": 101.2116819999992,
+              "rss_peak_mib": 4172.8046875,
+              "cuda_peak_allocated_mib": 654.90576171875,
+              "cuda_peak_reserved_mib": 760.0
+            },
+            "validation": {
+              "seconds": 4.309381500001109,
+              "rss_peak_mib": 4210.32421875,
+              "cuda_peak_allocated_mib": 408.52392578125,
+              "cuda_peak_reserved_mib": 760.0
+            }
+          }
+        },
+        {
+          "epoch": 3,
+          "bce": 0.18381305038928986,
+          "dice_loss": 0.9887633323669434,
+          "bce_plus_dice": 1.1725763827562332,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 131072.0,
+          "validation_pixel_ap": 0.23233961282248008,
+          "measurements": {
+            "training": {
+              "seconds": 101.66684449999957,
+              "rss_peak_mib": 4180.51953125,
+              "cuda_peak_allocated_mib": 654.90576171875,
+              "cuda_peak_reserved_mib": 760.0
+            },
+            "validation": {
+              "seconds": 4.722402699999293,
+              "rss_peak_mib": 4247.03125,
+              "cuda_peak_allocated_mib": 408.52392578125,
+              "cuda_peak_reserved_mib": 760.0
+            }
+          }
+        },
+        {
+          "epoch": 4,
+          "bce": 0.12839415669441223,
+          "dice_loss": 0.979852020740509,
+          "bce_plus_dice": 1.1082461774349213,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 65536.0,
+          "validation_pixel_ap": 0.4555638110009376,
+          "measurements": {
+            "training": {
+              "seconds": 102.56457460000092,
+              "rss_peak_mib": 4185.73046875,
+              "cuda_peak_allocated_mib": 654.90576171875,
+              "cuda_peak_reserved_mib": 760.0
+            },
+            "validation": {
+              "seconds": 4.730266099999426,
+              "rss_peak_mib": 4248.2265625,
+              "cuda_peak_allocated_mib": 408.52392578125,
+              "cuda_peak_reserved_mib": 760.0
+            }
+          }
+        },
+        {
+          "epoch": 5,
+          "bce": 0.08695948868989944,
+          "dice_loss": 0.9639980792999268,
+          "bce_plus_dice": 1.0509575679898262,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 32768.0,
+          "validation_pixel_ap": 0.5115660322239655,
+          "measurements": {
+            "training": {
+              "seconds": 102.42080720000013,
+              "rss_peak_mib": 4186.30859375,
+              "cuda_peak_allocated_mib": 654.90576171875,
+              "cuda_peak_reserved_mib": 760.0
+            },
+            "validation": {
+              "seconds": 4.795854900001359,
+              "rss_peak_mib": 4248.8125,
+              "cuda_peak_allocated_mib": 408.52392578125,
+              "cuda_peak_reserved_mib": 760.0
+            }
+          }
+        },
+        {
+          "epoch": 6,
+          "bce": 0.05904856696724892,
+          "dice_loss": 0.9508887529373169,
+          "bce_plus_dice": 1.0099373199045658,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 32768.0,
+          "validation_pixel_ap": 0.6277090161236573,
+          "measurements": {
+            "training": {
+              "seconds": 102.51656619999994,
+              "rss_peak_mib": 4186.39453125,
+              "cuda_peak_allocated_mib": 654.90576171875,
+              "cuda_peak_reserved_mib": 760.0
+            },
+            "validation": {
+              "seconds": 4.6866833999993105,
+              "rss_peak_mib": 4248.953125,
+              "cuda_peak_allocated_mib": 408.52392578125,
+              "cuda_peak_reserved_mib": 760.0
+            }
+          }
+        },
+        {
+          "epoch": 7,
+          "bce": 0.038764964789152145,
+          "dice_loss": 0.9376577734947205,
+          "bce_plus_dice": 0.9764227382838726,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 65536.0,
+          "validation_pixel_ap": 0.7456489194377347,
+          "measurements": {
+            "training": {
+              "seconds": 101.97048360000008,
+              "rss_peak_mib": 4186.4609375,
+              "cuda_peak_allocated_mib": 654.90576171875,
+              "cuda_peak_reserved_mib": 760.0
+            },
+            "validation": {
+              "seconds": 4.724212999999509,
+              "rss_peak_mib": 4229.32421875,
+              "cuda_peak_allocated_mib": 408.52392578125,
+              "cuda_peak_reserved_mib": 760.0
+            }
+          }
+        },
+        {
+          "epoch": 8,
+          "bce": 0.02676638960838318,
+          "dice_loss": 0.9241487979888916,
+          "bce_plus_dice": 0.9509151875972748,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 65536.0,
+          "validation_pixel_ap": 0.6686995804922687,
+          "measurements": {
+            "training": {
+              "seconds": 102.42453650000061,
+              "rss_peak_mib": 4177.1484375,
+              "cuda_peak_allocated_mib": 654.90576171875,
+              "cuda_peak_reserved_mib": 760.0
+            },
+            "validation": {
+              "seconds": 4.703845599999113,
+              "rss_peak_mib": 4239.65234375,
+              "cuda_peak_allocated_mib": 408.52392578125,
+              "cuda_peak_reserved_mib": 760.0
+            }
+          }
+        },
+        {
+          "epoch": 9,
+          "bce": 0.018356308341026306,
+          "dice_loss": 0.9101501107215881,
+          "bce_plus_dice": 0.9285064190626144,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 32768.0,
+          "validation_pixel_ap": 0.4990694010318801,
+          "measurements": {
+            "training": {
+              "seconds": 102.22382219999963,
+              "rss_peak_mib": 4177.65234375,
+              "cuda_peak_allocated_mib": 654.90576171875,
+              "cuda_peak_reserved_mib": 760.0
+            },
+            "validation": {
+              "seconds": 4.21574469999905,
+              "rss_peak_mib": 4240.16796875,
+              "cuda_peak_allocated_mib": 408.52392578125,
+              "cuda_peak_reserved_mib": 760.0
+            }
+          }
+        },
+        {
+          "epoch": 10,
+          "bce": 0.013762392103672028,
+          "dice_loss": 0.8975575566291809,
+          "bce_plus_dice": 0.9113199487328529,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 16384.0,
+          "validation_pixel_ap": 0.5782866113013485,
+          "measurements": {
+            "training": {
+              "seconds": 102.0029740000009,
+              "rss_peak_mib": 4177.65625,
+              "cuda_peak_allocated_mib": 654.90576171875,
+              "cuda_peak_reserved_mib": 760.0
+            },
+            "validation": {
+              "seconds": 4.183726999999635,
+              "rss_peak_mib": 4240.16015625,
+              "cuda_peak_allocated_mib": 408.52392578125,
+              "cuda_peak_reserved_mib": 760.0
+            }
+          }
+        }
+      ],
+      "measurements": {
+        "load_data": {
+          "seconds": 18.02465900000061,
+          "rss_peak_mib": 4138.0234375,
+          "cuda_peak_allocated_mib": 0.0009765625,
+          "cuda_peak_reserved_mib": 2.0
+        },
+        "best_checkpoint_validation": {
+          "seconds": 4.414869000000181,
+          "rss_peak_mib": 2282.8125,
+          "cuda_peak_allocated_mib": 408.27294921875,
+          "cuda_peak_reserved_mib": 462.0
+        }
+      }
+    },
+    "green": {
+      "protocol": "supervised within-green",
+      "train_ids": [
+        "green/0001",
+        "green/0003",
+        "green/0004",
+        "green/0005",
+        "green/0006",
+        "green/0007",
+        "green/0010",
+        "green/0011",
+        "green/0012",
+        "green/0013",
+        "green/0014",
+        "green/0015",
+        "green/0016",
+        "green/0017",
+        "green/0018",
+        "green/0021",
+        "green/0022",
+        "green/0023",
+        "green/0024",
+        "green/0025",
+        "green/0029",
+        "green/0030",
+        "green/0032",
+        "green/0034",
+        "green/0035",
+        "green/0037",
+        "green/0038",
+        "green/0039",
+        "green/0040",
+        "green/0043",
+        "green/0044",
+        "green/0048",
+        "green/0049",
+        "green/0052",
+        "green/0053",
+        "green/0054",
+        "green/0055",
+        "green/0056",
+        "green/0057",
+        "green/0058",
+        "green/0059",
+        "green/0060",
+        "green/0062",
+        "green/0063",
+        "green/0064",
+        "green/0066",
+        "green/0067",
+        "green/0070",
+        "green/0072",
+        "green/0073",
+        "green/0074",
+        "green/0076",
+        "green/0077",
+        "green/0078",
+        "green/0079",
+        "green/0080",
+        "green/0081",
+        "green/0082",
+        "green/0083",
+        "green/0084",
+        "green/0085",
+        "green/0086",
+        "green/0088",
+        "green/0089",
+        "green/0091",
+        "green/0092",
+        "green/0093",
+        "green/0094",
+        "green/0096",
+        "green/0100"
+      ],
+      "training_normal_count": 70,
+      "training_defect_count": 70,
+      "validation_ids": [
+        "green/0008",
+        "green/0019",
+        "green/0026",
+        "green/0027",
+        "green/0028",
+        "green/0041",
+        "green/0042",
+        "green/0045",
+        "green/0046",
+        "green/0061",
+        "green/0068",
+        "green/0069",
+        "green/0071",
+        "green/0075",
+        "green/0098"
+      ],
+      "best_epoch": 9,
+      "best_checkpoint": "green/best_validation.pt",
+      "checkpoint_sha256": "aa04e631df6fba79abbc09d5fe2d41691f3dbd4a3d31e231685ef35fb5152b16",
+      "metrics": {
+        "pixel_auroc": 0.9055895095503959,
+        "pixel_ap": 0.7407804836051712,
+        "aupro": 0.8098695338005629,
+        "positive_pixels": 482793,
+        "negative_pixels": 125346327,
+        "size_specific": {
+          "small_lt64": {
+            "components": 88,
+            "aupro": 0.790623374057425,
+            "mean_overlap_at_1pct_fpr": 0.7538099453951649
+          },
+          "medium_64_to_511": {
+            "components": 49,
+            "aupro": 0.8055570945601987,
+            "mean_overlap_at_1pct_fpr": 0.7885892756962902
+          },
+          "large_ge512": {
+            "components": 86,
+            "aupro": 0.8320203661286145,
+            "mean_overlap_at_1pct_fpr": 0.8174228680245443
+          }
+        },
+        "image_auroc": 1.0,
+        "image_ap": 1.0,
+        "mean_inference_s": 0.10978563000026043
+      },
+      "predictions": [
+        {
+          "sample_id": "green/0008",
+          "role": "normal",
+          "image_score": 0.050845712423324585,
+          "inference_s": 0.11046110000097542,
+          "probability_path": "raw/0008_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0008",
+          "role": "bubbles",
+          "image_score": 0.9995872974395752,
+          "inference_s": 0.11134979999951611,
+          "probability_path": "raw/0008_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0019",
+          "role": "normal",
+          "image_score": 0.9889635443687439,
+          "inference_s": 0.11141130000032717,
+          "probability_path": "raw/0019_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0019",
+          "role": "bubbles",
+          "image_score": 0.9956589937210083,
+          "inference_s": 0.10815270000057353,
+          "probability_path": "raw/0019_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0026",
+          "role": "normal",
+          "image_score": 0.2724580764770508,
+          "inference_s": 0.11005939999995462,
+          "probability_path": "raw/0026_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0026",
+          "role": "bubbles",
+          "image_score": 0.9999485611915588,
+          "inference_s": 0.1077558000015415,
+          "probability_path": "raw/0026_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0027",
+          "role": "normal",
+          "image_score": 0.10173729062080383,
+          "inference_s": 0.10829779999949096,
+          "probability_path": "raw/0027_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0027",
+          "role": "bubbles",
+          "image_score": 0.9999556541442871,
+          "inference_s": 0.10891929999888816,
+          "probability_path": "raw/0027_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0028",
+          "role": "normal",
+          "image_score": 0.27333834767341614,
+          "inference_s": 0.10787900000104855,
+          "probability_path": "raw/0028_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0028",
+          "role": "bubbles",
+          "image_score": 0.9995178580284119,
+          "inference_s": 0.1083120000002964,
+          "probability_path": "raw/0028_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0041",
+          "role": "normal",
+          "image_score": 0.029939105734229088,
+          "inference_s": 0.11004519999914919,
+          "probability_path": "raw/0041_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0041",
+          "role": "bubbles",
+          "image_score": 0.9999977350234985,
+          "inference_s": 0.10898450000058801,
+          "probability_path": "raw/0041_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0042",
+          "role": "normal",
+          "image_score": 0.7651392817497253,
+          "inference_s": 0.10952189999989059,
+          "probability_path": "raw/0042_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0042",
+          "role": "bubbles",
+          "image_score": 0.999996542930603,
+          "inference_s": 0.11051100000076985,
+          "probability_path": "raw/0042_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0045",
+          "role": "normal",
+          "image_score": 0.30556610226631165,
+          "inference_s": 0.1082858000008855,
+          "probability_path": "raw/0045_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0045",
+          "role": "bubbles",
+          "image_score": 0.9999836683273315,
+          "inference_s": 0.1115853999999672,
+          "probability_path": "raw/0045_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0046",
+          "role": "normal",
+          "image_score": 0.4698980748653412,
+          "inference_s": 0.10817090000091412,
+          "probability_path": "raw/0046_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0046",
+          "role": "bubbles",
+          "image_score": 0.9997100234031677,
+          "inference_s": 0.11249669999961043,
+          "probability_path": "raw/0046_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0061",
+          "role": "normal",
+          "image_score": 0.4731360971927643,
+          "inference_s": 0.11145880000003672,
+          "probability_path": "raw/0061_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0061",
+          "role": "bubbles",
+          "image_score": 0.9999803900718689,
+          "inference_s": 0.10848459999942861,
+          "probability_path": "raw/0061_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0068",
+          "role": "normal",
+          "image_score": 0.7518683671951294,
+          "inference_s": 0.10756310000033409,
+          "probability_path": "raw/0068_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0068",
+          "role": "bubbles",
+          "image_score": 0.999989926815033,
+          "inference_s": 0.11055510000005597,
+          "probability_path": "raw/0068_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0069",
+          "role": "normal",
+          "image_score": 0.1724299043416977,
+          "inference_s": 0.10878729999967618,
+          "probability_path": "raw/0069_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0069",
+          "role": "bubbles",
+          "image_score": 0.9999593496322632,
+          "inference_s": 0.11009050000029674,
+          "probability_path": "raw/0069_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0071",
+          "role": "normal",
+          "image_score": 0.2523386478424072,
+          "inference_s": 0.11200339999959397,
+          "probability_path": "raw/0071_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0071",
+          "role": "bubbles",
+          "image_score": 0.9992905855178833,
+          "inference_s": 0.10976889999983541,
+          "probability_path": "raw/0071_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0075",
+          "role": "normal",
+          "image_score": 0.545582115650177,
+          "inference_s": 0.10951530000056664,
+          "probability_path": "raw/0075_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0075",
+          "role": "bubbles",
+          "image_score": 0.9999944567680359,
+          "inference_s": 0.10878580000098736,
+          "probability_path": "raw/0075_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "green/0098",
+          "role": "normal",
+          "image_score": 0.9954255819320679,
+          "inference_s": 0.11450260000128765,
+          "probability_path": "raw/0098_normal_probability.npy"
+        },
+        {
+          "sample_id": "green/0098",
+          "role": "bubbles",
+          "image_score": 0.9996680021286011,
+          "inference_s": 0.10985390000132611,
+          "probability_path": "raw/0098_bubbles_probability.npy"
+        }
+      ],
+      "history": [
+        {
+          "epoch": 1,
+          "bce": 0.36506351828575134,
+          "dice_loss": 0.9936779141426086,
+          "bce_plus_dice": 1.35874143242836,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 65536.0,
+          "validation_pixel_ap": 0.008125815686029688,
+          "measurements": {
+            "training": {
+              "seconds": 102.51306560000012,
+              "rss_peak_mib": 4173.6328125,
+              "cuda_peak_allocated_mib": 797.18115234375,
+              "cuda_peak_reserved_mib": 890.0
+            },
+            "validation": {
+              "seconds": 4.4112438000011025,
+              "rss_peak_mib": 4231.5390625,
+              "cuda_peak_allocated_mib": 549.73681640625,
+              "cuda_peak_reserved_mib": 890.0
+            }
+          }
+        },
+        {
+          "epoch": 2,
+          "bce": 0.2569708824157715,
+          "dice_loss": 0.9938949942588806,
+          "bce_plus_dice": 1.250865876674652,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 65536.0,
+          "validation_pixel_ap": 0.011293805621727777,
+          "measurements": {
+            "training": {
+              "seconds": 102.43637750000016,
+              "rss_peak_mib": 4170.12890625,
+              "cuda_peak_allocated_mib": 797.18115234375,
+              "cuda_peak_reserved_mib": 890.0
+            },
+            "validation": {
+              "seconds": 4.692966800001159,
+              "rss_peak_mib": 4232.64453125,
+              "cuda_peak_allocated_mib": 550.17431640625,
+              "cuda_peak_reserved_mib": 890.0
+            }
+          }
+        },
+        {
+          "epoch": 3,
+          "bce": 0.18218131363391876,
+          "dice_loss": 0.9934705495834351,
+          "bce_plus_dice": 1.1756518632173538,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 131072.0,
+          "validation_pixel_ap": 0.10977405467073258,
+          "measurements": {
+            "training": {
+              "seconds": 102.03067929999997,
+              "rss_peak_mib": 4165.359375,
+              "cuda_peak_allocated_mib": 797.18115234375,
+              "cuda_peak_reserved_mib": 890.0
+            },
+            "validation": {
+              "seconds": 4.2145230999994965,
+              "rss_peak_mib": 4231.8671875,
+              "cuda_peak_allocated_mib": 550.17431640625,
+              "cuda_peak_reserved_mib": 890.0
+            }
+          }
+        },
+        {
+          "epoch": 4,
+          "bce": 0.12743160128593445,
+          "dice_loss": 0.99040687084198,
+          "bce_plus_dice": 1.1178384721279144,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 131072.0,
+          "validation_pixel_ap": 0.059958027652565776,
+          "measurements": {
+            "training": {
+              "seconds": 101.96105700000044,
+              "rss_peak_mib": 4169.35546875,
+              "cuda_peak_allocated_mib": 797.18115234375,
+              "cuda_peak_reserved_mib": 890.0
+            },
+            "validation": {
+              "seconds": 4.211670500000764,
+              "rss_peak_mib": 4231.8671875,
+              "cuda_peak_allocated_mib": 550.17431640625,
+              "cuda_peak_reserved_mib": 890.0
+            }
+          }
+        },
+        {
+          "epoch": 5,
+          "bce": 0.08986471593379974,
+          "dice_loss": 0.9839893579483032,
+          "bce_plus_dice": 1.073854073882103,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 262144.0,
+          "validation_pixel_ap": 0.579453365255929,
+          "measurements": {
+            "training": {
+              "seconds": 102.01533250000102,
+              "rss_peak_mib": 4169.57421875,
+              "cuda_peak_allocated_mib": 797.18115234375,
+              "cuda_peak_reserved_mib": 890.0
+            },
+            "validation": {
+              "seconds": 4.212770400001318,
+              "rss_peak_mib": 4204.58203125,
+              "cuda_peak_allocated_mib": 550.17431640625,
+              "cuda_peak_reserved_mib": 890.0
+            }
+          }
+        },
+        {
+          "epoch": 6,
+          "bce": 0.0613374337553978,
+          "dice_loss": 0.9694619178771973,
+          "bce_plus_dice": 1.030799351632595,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 131072.0,
+          "validation_pixel_ap": 0.6618292722590509,
+          "measurements": {
+            "training": {
+              "seconds": 101.97801869999967,
+              "rss_peak_mib": 4169.5859375,
+              "cuda_peak_allocated_mib": 797.18115234375,
+              "cuda_peak_reserved_mib": 890.0
+            },
+            "validation": {
+              "seconds": 4.254384600000776,
+              "rss_peak_mib": 4224.4921875,
+              "cuda_peak_allocated_mib": 550.17431640625,
+              "cuda_peak_reserved_mib": 890.0
+            }
+          }
+        },
+        {
+          "epoch": 7,
+          "bce": 0.04152083024382591,
+          "dice_loss": 0.9579041600227356,
+          "bce_plus_dice": 0.9994249902665615,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 65536.0,
+          "validation_pixel_ap": 0.5117890057887482,
+          "measurements": {
+            "training": {
+              "seconds": 102.04281339999943,
+              "rss_peak_mib": 4169.66015625,
+              "cuda_peak_allocated_mib": 797.18115234375,
+              "cuda_peak_reserved_mib": 890.0
+            },
+            "validation": {
+              "seconds": 4.2122732999996515,
+              "rss_peak_mib": 4232.1640625,
+              "cuda_peak_allocated_mib": 550.17431640625,
+              "cuda_peak_reserved_mib": 890.0
+            }
+          }
+        },
+        {
+          "epoch": 8,
+          "bce": 0.02935442514717579,
+          "dice_loss": 0.9457160234451294,
+          "bce_plus_dice": 0.9750704485923052,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 65536.0,
+          "validation_pixel_ap": 0.6394794655719572,
+          "measurements": {
+            "training": {
+              "seconds": 101.93874909999977,
+              "rss_peak_mib": 4169.94140625,
+              "cuda_peak_allocated_mib": 797.18115234375,
+              "cuda_peak_reserved_mib": 890.0
+            },
+            "validation": {
+              "seconds": 4.2052168999998685,
+              "rss_peak_mib": 4232.734375,
+              "cuda_peak_allocated_mib": 550.17431640625,
+              "cuda_peak_reserved_mib": 890.0
+            }
+          }
+        },
+        {
+          "epoch": 9,
+          "bce": 0.019337452948093414,
+          "dice_loss": 0.9302460551261902,
+          "bce_plus_dice": 0.9495835080742836,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 65536.0,
+          "validation_pixel_ap": 0.7407804836051712,
+          "measurements": {
+            "training": {
+              "seconds": 101.51028099999894,
+              "rss_peak_mib": 4170.23828125,
+              "cuda_peak_allocated_mib": 797.18115234375,
+              "cuda_peak_reserved_mib": 890.0
+            },
+            "validation": {
+              "seconds": 3.9011901000012585,
+              "rss_peak_mib": 4232.75,
+              "cuda_peak_allocated_mib": 550.17431640625,
+              "cuda_peak_reserved_mib": 890.0
+            }
+          }
+        },
+        {
+          "epoch": 10,
+          "bce": 0.013614892959594727,
+          "dice_loss": 0.9166444540023804,
+          "bce_plus_dice": 0.9302593469619751,
+          "batches": 875,
+          "tiles": 3500,
+          "loss_scale_end": 65536.0,
+          "validation_pixel_ap": 0.6746894925720751,
+          "measurements": {
+            "training": {
+              "seconds": 101.28426920000129,
+              "rss_peak_mib": 4170.23828125,
+              "cuda_peak_allocated_mib": 797.18115234375,
+              "cuda_peak_reserved_mib": 890.0
+            },
+            "validation": {
+              "seconds": 3.964182699999583,
+              "rss_peak_mib": 4232.7421875,
+              "cuda_peak_allocated_mib": 550.17431640625,
+              "cuda_peak_reserved_mib": 890.0
+            }
+          }
+        }
+      ],
+      "measurements": {
+        "load_data": {
+          "seconds": 13.092443400000775,
+          "rss_peak_mib": 4201.58203125,
+          "cuda_peak_allocated_mib": 139.1513671875,
+          "cuda_peak_reserved_mib": 462.0
+        },
+        "best_checkpoint_validation": {
+          "seconds": 4.123624400001063,
+          "rss_peak_mib": 2283.85546875,
+          "cuda_peak_allocated_mib": 550.17333984375,
+          "cuda_peak_reserved_mib": 680.0
+        }
+      }
+    },
+    "regular": {
+      "protocol": "red-trained U-Net transferred to regular; zero regular fit frames",
+      "training_normal_count": 0,
+      "training_defect_count": 0,
+      "validation_ids": [
+        "regular/0004",
+        "regular/0074",
+        "regular/0097"
+      ],
+      "source_checkpoint": "red/best_validation.pt",
+      "checkpoint_sha256": "53ceae4d67b0f9eb81f645c28d1d4655e9bd968e417204770e9288f56994a18d",
+      "source_epoch": 7,
+      "metrics": {
+        "pixel_auroc": 0.9585527906147492,
+        "pixel_ap": 0.7834499349382543,
+        "aupro": 0.8198250258555176,
+        "positive_pixels": 106761,
+        "negative_pixels": 12476151,
+        "size_specific": {
+          "small_lt64": {
+            "components": 14,
+            "aupro": 0.7121400632898877,
+            "mean_overlap_at_1pct_fpr": 0.6443768996960476
+          },
+          "medium_64_to_511": {
+            "components": 15,
+            "aupro": 0.740059037045274,
+            "mean_overlap_at_1pct_fpr": 0.638328837954597
+          },
+          "large_ge512": {
+            "components": 21,
+            "aupro": 0.9485907071927929,
+            "mean_overlap_at_1pct_fpr": 0.9316726970038544
+          }
+        },
+        "image_auroc": null,
+        "image_ap": null,
+        "mean_inference_s": 0.10915493333353272
+      },
+      "predictions": [
+        {
+          "sample_id": "regular/0004",
+          "role": "bubbles",
+          "image_score": 0.9967092275619507,
+          "inference_s": 0.10700739999992948,
+          "probability_path": "raw/0004_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "regular/0074",
+          "role": "bubbles",
+          "image_score": 0.999983549118042,
+          "inference_s": 0.10838839999996708,
+          "probability_path": "raw/0074_bubbles_probability.npy"
+        },
+        {
+          "sample_id": "regular/0097",
+          "role": "bubbles",
+          "image_score": 0.9999943971633911,
+          "inference_s": 0.11206900000070164,
+          "probability_path": "raw/0097_bubbles_probability.npy"
+        }
+      ],
+      "measurements": {
+        "red_to_regular_validation": {
+          "seconds": 0.48877600000014354,
+          "rss_peak_mib": 1932.1796875,
+          "cuda_peak_allocated_mib": 550.04931640625,
+          "cuda_peak_reserved_mib": 680.0
+        }
+      }
+    }
+  }
+}

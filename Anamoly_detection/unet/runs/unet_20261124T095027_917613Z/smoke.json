@@ -1,0 +1,10 @@
+{
+  "logit_shape": [
+    4,
+    1,
+    512,
+    512
+  ],
+  "logit_dtype": "torch.float16",
+  "bce_plus_dice": 1.5808944702148438
+}

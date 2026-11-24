@@ -10,6 +10,7 @@ This thesis project uses **ANNAlyzer**, a Blender simulation of an industrial in
 | [Blender scenes](synthetic_dataset/) and [render scripts](scripts/) | Tray models, inspection-cell controls and batch rendering |
 | [PatchCore setup](Anamoly_detection/patchcore/README.md) | Pinned CUDA environment and single-reference smoke test |
 | [AnomalyDINO setup](Anamoly_detection/anomalydino/README.md) | Isolated environment, frozen DINOv2 encoder and validation runner |
+| [U-Net setup](Anamoly_detection/unet/README.md) | Supervised ResNet18 U-Net training and red-to-regular transfer evaluation |
 | [Research journal](Anamoly_detection/JOURNAL.md) | Dataset audit, experiment decisions and measured results |
 | [Smoke-test report](Anamoly_detection/patchcore/runs/regular_smoke_20261124T072401_611224Z/report.json) | Tensor shapes, timings, memory use and raw scores |
 | [Grouped split](Anamoly_detection/patchcore/split_v1.json) and [red validation report](Anamoly_detection/patchcore/runs/red_phase3_20261124T075750_651308Z/report.json) | Reproducible setup assignments, coreset comparison and stitching results |
@@ -30,14 +31,18 @@ The red validation outputs include a side-by-side comparison, full-resolution he
 
 ## Validation benchmark
 
-PatchCore and AnomalyDINO completed validation on regular, red and green lighting. The two methods use the frozen 70/15/15 setup-ID assignment for the colored cohorts. The regular cohort uses one fixed normal reference and three defective development frames. Its image-level metrics are N/A because it has zero independent normal validation frames. The final test sets remain reserved.
+PatchCore, AnomalyDINO and U-Net completed validation on regular, red and green lighting using the frozen 70/15/15 colored setup-ID assignment. PatchCore and AnomalyDINO use normal-only fitting. U-Net uses both normal and labeled defective training images. On regular lighting, PatchCore and AnomalyDINO fit from one clean reference, while U-Net transfers its red-trained checkpoint to the three regular development defects. Regular image-level metrics are N/A because that cohort has zero clean validation frames. The final test sets remain reserved.
 
-| Lighting | PatchCore AUPRO at 30% FPR | AnomalyDINO AUPRO at 30% FPR |
-| --- | ---: | ---: |
-| Regular | 0.7015 | 0.5385 |
-| Red | 0.8177 | 0.6304 |
-| Green | 0.8346 | 0.6867 |
+| Validation lighting | PatchCore AUPRO | AnomalyDINO AUPRO | U-Net AUPRO | U-Net pixel AP |
+| --- | ---: | ---: | ---: | ---: |
+| Regular (U-Net transfer) | 0.7015 | 0.5385 | 0.8198 | 0.7834 |
+| Red | 0.8177 | 0.6304 | 0.5897 | 0.7456 |
+| Green | 0.8346 | 0.6867 | 0.8099 | 0.7408 |
+
+AUPRO is integrated to 30% background false-positive rate. The U-Net checkpoints were selected by same-light validation pixel AP at red epoch 7 and green epoch 9. [Three-model CSV](Anamoly_detection/unet/runs/unet_20261124T095027_917613Z/three_model_comparison.csv) · [Metric charts](Anamoly_detection/unet/runs/unet_20261124T095027_917613Z/three_model_comparison.png) · [Defect-size comparison](Anamoly_detection/unet/runs/unet_20261124T095027_917613Z/three_model_defect_sizes.png) · [Training curves](Anamoly_detection/unet/runs/unet_20261124T095027_917613Z/training_curves.png) · [U-Net report](Anamoly_detection/unet/runs/unet_20261124T095027_917613Z/report.json)
 
 The two-model results, including image- and pixel-level metrics, are available alongside the charts. [PatchCore report](Anamoly_detection/patchcore/runs/lighting_benchmark_20261124T084630_908213Z/report.json) · [AnomalyDINO report](Anamoly_detection/anomalydino/runs/anomalydino_20261124T091730_300718Z/report.json) · [Comparison chart](Anamoly_detection/anomalydino/runs/anomalydino_20261124T091730_300718Z/model_comparison.png) · [Comparison CSV](Anamoly_detection/anomalydino/runs/anomalydino_20261124T091730_300718Z/model_comparison.csv)
 
 Git LFS stores the six fitted states listed in the journal and the validation artifact archives. The consolidated PatchCore archive covers the regular and green score maps and the three-color figures. The Phase 3 archive contains the red maps. [PatchCore validation artifacts](Anamoly_detection/benchmark_exports/patchcore_validation_artifacts.zip) · [AnomalyDINO validation artifacts](Anamoly_detection/benchmark_exports/anomalydino_validation_artifacts.zip)
+
+Git LFS also stores the two selected U-Net checkpoints. The full-resolution U-Net maps, masks and overlays are kept with the local run. [Red U-Net checkpoint](Anamoly_detection/unet/runs/unet_20261124T095027_917613Z/red/best_validation.pt) · [Green U-Net checkpoint](Anamoly_detection/unet/runs/unet_20261124T095027_917613Z/green/best_validation.pt) · [U-Net validation overview](Anamoly_detection/unet/runs/unet_20261124T095027_917613Z/lighting_predictions.png)
