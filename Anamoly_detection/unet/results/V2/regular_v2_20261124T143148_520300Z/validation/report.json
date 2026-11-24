@@ -1,0 +1,397 @@
+{
+  "stage": "validation",
+  "image_auroc": null,
+  "image_ap": null,
+  "threshold": 0.9997196197509766,
+  "threshold_rule": "Flag score > maximum V2 validation normal score",
+  "display_max": 0.9999998807907104,
+  "fixed_pose_pixel_score_max": 1.0,
+  "varied_normal": {
+    "frames": 15,
+    "false_positives": 0,
+    "false_positive_rate": 0.0
+  },
+  "fixed_pose_defects": {
+    "frames": 3,
+    "true_positives": 2,
+    "sensitivity": 0.6666666666666666,
+    "pixel_auroc": 0.9585527906147492,
+    "pixel_ap": 0.7834499349382543,
+    "aupro": 0.8198250258555176,
+    "positive_pixels": 106761,
+    "negative_pixels": 12476151,
+    "size_specific": {
+      "small_lt64": {
+        "components": 14,
+        "aupro": 0.7121400632898877,
+        "mean_overlap_at_1pct_fpr": 0.6443768996960476
+      },
+      "medium_64_to_511": {
+        "components": 15,
+        "aupro": 0.740059037045274,
+        "mean_overlap_at_1pct_fpr": 0.638328837954597
+      },
+      "large_ge512": {
+        "components": 21,
+        "aupro": 0.9485907071927929,
+        "mean_overlap_at_1pct_fpr": 0.9316726970038544
+      }
+    }
+  },
+  "measurements": {
+    "inference": {
+      "seconds": 3.6154213000008895,
+      "rss_peak_mib": 1354.203125,
+      "cuda_peak_allocated_mib": 269.81103515625,
+      "cuda_peak_reserved_mib": 306.0
+    }
+  },
+  "rows": [
+    {
+      "id": "regular-v2/0008",
+      "cohort": "varied_normal",
+      "image_score": 0.9996271729469299,
+      "map_max": 0.9999797940254211,
+      "inference_seconds": 0.13990439999906812,
+      "score_map": "raw/regular-v2_0008.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0019",
+      "cohort": "varied_normal",
+      "image_score": 0.9992530941963196,
+      "map_max": 0.9999586343765259,
+      "inference_seconds": 0.13840980000168202,
+      "score_map": "raw/regular-v2_0019.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0026",
+      "cohort": "varied_normal",
+      "image_score": 0.9955615401268005,
+      "map_max": 0.9990818500518799,
+      "inference_seconds": 0.14189640000040527,
+      "score_map": "raw/regular-v2_0026.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0027",
+      "cohort": "varied_normal",
+      "image_score": 0.9983994960784912,
+      "map_max": 0.9992819428443909,
+      "inference_seconds": 0.13247409999894444,
+      "score_map": "raw/regular-v2_0027.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0028",
+      "cohort": "varied_normal",
+      "image_score": 0.9989985227584839,
+      "map_max": 0.9997546076774597,
+      "inference_seconds": 0.1467056000001321,
+      "score_map": "raw/regular-v2_0028.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0041",
+      "cohort": "varied_normal",
+      "image_score": 0.9986258745193481,
+      "map_max": 0.9998133778572083,
+      "inference_seconds": 0.1305685999977868,
+      "score_map": "raw/regular-v2_0041.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0042",
+      "cohort": "varied_normal",
+      "image_score": 0.9994915723800659,
+      "map_max": 0.9999393820762634,
+      "inference_seconds": 0.1314553000011074,
+      "score_map": "raw/regular-v2_0042.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0045",
+      "cohort": "varied_normal",
+      "image_score": 0.9997196197509766,
+      "map_max": 0.9999476075172424,
+      "inference_seconds": 0.13129769999795826,
+      "score_map": "raw/regular-v2_0045.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0046",
+      "cohort": "varied_normal",
+      "image_score": 0.9520107507705688,
+      "map_max": 0.9999845027923584,
+      "inference_seconds": 0.13358180000068387,
+      "score_map": "raw/regular-v2_0046.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0061",
+      "cohort": "varied_normal",
+      "image_score": 0.9996595978736877,
+      "map_max": 0.9999894499778748,
+      "inference_seconds": 0.14261350000015227,
+      "score_map": "raw/regular-v2_0061.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0068",
+      "cohort": "varied_normal",
+      "image_score": 0.9989941716194153,
+      "map_max": 0.9999231696128845,
+      "inference_seconds": 0.12929370000347262,
+      "score_map": "raw/regular-v2_0068.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0069",
+      "cohort": "varied_normal",
+      "image_score": 0.9972379803657532,
+      "map_max": 0.9996898174285889,
+      "inference_seconds": 0.13690610000048764,
+      "score_map": "raw/regular-v2_0069.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0071",
+      "cohort": "varied_normal",
+      "image_score": 0.9944106340408325,
+      "map_max": 0.9993880391120911,
+      "inference_seconds": 0.13570859999890672,
+      "score_map": "raw/regular-v2_0071.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0075",
+      "cohort": "varied_normal",
+      "image_score": 0.997023344039917,
+      "map_max": 0.9996316432952881,
+      "inference_seconds": 0.12469810000038706,
+      "score_map": "raw/regular-v2_0075.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular-v2/0098",
+      "cohort": "varied_normal",
+      "image_score": 0.9970568418502808,
+      "map_max": 0.9996841549873352,
+      "inference_seconds": 0.13487019999956829,
+      "score_map": "raw/regular-v2_0098.npy",
+      "flagged": false
+    },
+    {
+      "id": "regular/0004",
+      "cohort": "fixed_pose_defect",
+      "image_score": 0.9967092275619507,
+      "map_max": 0.9994926452636719,
+      "inference_seconds": 0.11749609999969834,
+      "score_map": "raw/regular_0004.npy",
+      "flagged": false,
+      "positive_pixels": 2297
+    },
+    {
+      "id": "regular/0074",
+      "cohort": "fixed_pose_defect",
+      "image_score": 0.999983549118042,
+      "map_max": 0.9999989867210388,
+      "inference_seconds": 0.12298999999984517,
+      "score_map": "raw/regular_0074.npy",
+      "flagged": true,
+      "positive_pixels": 25801
+    },
+    {
+      "id": "regular/0097",
+      "cohort": "fixed_pose_defect",
+      "image_score": 0.9999943971633911,
+      "map_max": 0.9999998807907104,
+      "inference_seconds": 0.11779220000244095,
+      "score_map": "raw/regular_0097.npy",
+      "flagged": true,
+      "positive_pixels": 78663
+    }
+  ],
+  "model": "U-Net",
+  "configuration": {
+    "torch": "2.9.1+cu128",
+    "cuda": "12.8",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "vram_mib_available": 8187.5,
+    "torchvision": "0.24.1+cu128",
+    "protocol": "Red-to-regular supervised transfer; no V2 fitting",
+    "backbone": "ResNet18 U-Net",
+    "source_checkpoint": "Anamoly_detection\\unet\\results\\V1\\unet_20261124T095027_917613Z\\red\\best_validation.pt",
+    "source_checkpoint_sha256": "53ceae4d67b0f9eb81f645c28d1d4655e9bd968e417204770e9288f56994a18d",
+    "source_best_epoch": 7,
+    "seed": 24117,
+    "frame": 2048,
+    "tile": 512,
+    "overlap": 128,
+    "tile_origins_yx": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        384
+      ],
+      [
+        0,
+        768
+      ],
+      [
+        0,
+        1152
+      ],
+      [
+        0,
+        1536
+      ],
+      [
+        384,
+        0
+      ],
+      [
+        384,
+        384
+      ],
+      [
+        384,
+        768
+      ],
+      [
+        384,
+        1152
+      ],
+      [
+        384,
+        1536
+      ],
+      [
+        768,
+        0
+      ],
+      [
+        768,
+        384
+      ],
+      [
+        768,
+        768
+      ],
+      [
+        768,
+        1152
+      ],
+      [
+        768,
+        1536
+      ],
+      [
+        1152,
+        0
+      ],
+      [
+        1152,
+        384
+      ],
+      [
+        1152,
+        768
+      ],
+      [
+        1152,
+        1152
+      ],
+      [
+        1152,
+        1536
+      ],
+      [
+        1536,
+        0
+      ],
+      [
+        1536,
+        384
+      ],
+      [
+        1536,
+        768
+      ],
+      [
+        1536,
+        1152
+      ],
+      [
+        1536,
+        1536
+      ]
+    ],
+    "resize": null,
+    "crop": null,
+    "stitch": "gaussian",
+    "sigma_px": 128,
+    "rgb_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "rgb_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "precision": "CUDA FP16 autocast; FP32 probabilities",
+    "batch_size": 4,
+    "training_ids": []
+  },
+  "fit_measurements": {
+    "load_transfer_checkpoint": {
+      "seconds": 0.49673839999741176,
+      "rss_peak_mib": 799.96875,
+      "cuda_peak_allocated_mib": 51.67822265625,
+      "cuda_peak_reserved_mib": 66.0
+    },
+    "smoke_inference": {
+      "seconds": 1.6505247999994026,
+      "rss_peak_mib": 1339.1953125,
+      "cuda_peak_allocated_mib": 269.81103515625,
+      "cuda_peak_reserved_mib": 306.0
+    }
+  },
+  "checkpoint": {
+    "sha256": "53ceae4d67b0f9eb81f645c28d1d4655e9bd968e417204770e9288f56994a18d",
+    "file": "regular_state.pt"
+  },
+  "dataset_sha256": {
+    "manifest_v2": "75f9254e20c003d5d591432c78423837d94a78e5b525abc08e292aafa6bd94b3",
+    "dataset_v2": "600888c4be43b3491aee107347f2437805afc8a9920669960cf804ef0a9cae1f",
+    "split_v1": "3234ec7635558c888f863aefe29d263399a47db5df2cba5aa4f5147a763c2677",
+    "audit_v1": "b6009b96dd73ff16511c9819a3ad441a939a8f05bd70fd0a564d0f3aeec80cd4"
+  },
+  "source_sha256": {
+    "Anamoly_detection/patchcore/V2/lighting_benchmark.py": "f6893233e8f4f26c5bb2e3141a41b3a53bebded3ee0d07e8a0679c1e4e3e024e",
+    "Anamoly_detection/patchcore/V2/phase3.py": "5ebe9ce1783f552df0cabdecf6b328af91d10655322ef2670802bb8ad38f96ef",
+    "Anamoly_detection/patchcore/V2/phase3_metrics.py": "41f0e120a9a6e115ee348a84f25c5eb071434a6eb1360afb1e8d9f9763ef8677",
+    "Anamoly_detection/patchcore/V2/run_v2.py": "2eb2c1043f7d3c9ae521db4d3074c31c8423cf6532807c1a922dd77bc1c9dcd8",
+    "Anamoly_detection/patchcore/V2/smoke.py": "e4790b5331cfd5b48171673a7146268053c0fc5849657845820a9b309f452d61",
+    "Anamoly_detection/patchcore/V2/split_dataset.py": "a22f0294fd6b616bf57920d81247bfb9afbae06bda5b57cdf03e92a0c71ce869",
+    "Anamoly_detection/unet/V2/baseline.py": "a297f81f9fedf9336e855aa071b55938436debade9be09e1979559d2173d9aef",
+    "Anamoly_detection/unet/V2/model.py": "4b5b11bb1b7efda0e9b4d3a3c456dd612fe50238627250062bd2b22fcd21b59c",
+    "Anamoly_detection/unet/V2/run_v2.py": "7551c172c5dfe4878b91167e6061a6f35c138d6ba59e64e949c64e7a47853e7a",
+    "Anamoly_detection/v2_workflow.py": "64564d83685ce5b7f329cc5f616ae093f01a8b1c0a2babf844fe4e5194fdb271"
+  },
+  "near_duplicates_accepted": true,
+  "fold_counts": {
+    "train": 70,
+    "validation": 15,
+    "test": 15
+  },
+  "python": "3.12.13 (main, Jun  2 2026, 22:47:20) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "git_revision": "7f47467943ed08d82b9493867ecf60042d1adba1"
+}
