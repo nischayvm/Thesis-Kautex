@@ -1,12 +1,14 @@
 # ANNAlyzer PatchCore smoke test
 
-From this folder in PowerShell, use the pinned environment and the official TorchVision checkpoint.
+From this folder in PowerShell, use the pinned environment and the official TorchVision checkpoint. The repository tracks the pretrained and fitted weights with Git LFS. Run `git lfs pull` if the clone contains weight pointers. The `curl` command below provides the official checkpoint separately when needed.
 
 ```powershell
 $env:UV_CACHE_DIR = Join-Path $PWD '.uv-cache'
 $env:UV_PYTHON_INSTALL_DIR = Join-Path $PWD '.python'
 uv sync --locked --python 3.12.13 --managed-python --no-progress
-curl.exe --fail --location --output wide_resnet50_2-9ba9bcbe.pth https://download.pytorch.org/models/wide_resnet50_2-9ba9bcbe.pth
+if (-not (Test-Path -LiteralPath 'wide_resnet50_2-9ba9bcbe.pth')) {
+    curl.exe --fail --location --output wide_resnet50_2-9ba9bcbe.pth https://download.pytorch.org/models/wide_resnet50_2-9ba9bcbe.pth
+}
 .\.venv\Scripts\python.exe -u smoke.py
 ```
 

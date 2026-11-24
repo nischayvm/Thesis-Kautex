@@ -5,4 +5,4 @@
 /__pycache__/
 /runs/*/*
 !/runs/*/report.json
-/wide_resnet50_2-9ba9bcbe.pth
+!/runs/regular_smoke_20261124T072401_611224Z/fitted_state.pt
