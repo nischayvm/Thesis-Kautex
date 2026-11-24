@@ -1,0 +1,405 @@
+{
+  "config": {
+    "seed": 24117,
+    "reference": {
+      "path": "regular/normal/0001.png",
+      "label": "normal",
+      "sha256": "7196ef7d9927f2bf57cfaa685e577f54c29aa7f6dbb867a56d0f062153ca83a6",
+      "decoded_pixel_sha256": "09963ac72d03c7f97bfc3c868ca5218462ff27990f3572fe05b35da11d4b9df5",
+      "mask_path": null
+    },
+    "backbone": "wide_resnet50_2.IMAGENET1K_V2",
+    "backbone_weight_sha256": "9ba9bcbebc349d733a72eb7608143fd754e4689ac8d8ce2916ca0bdff6443950",
+    "layers": [
+      "layer2",
+      "layer3"
+    ],
+    "precision": "FP32, TF32 disabled",
+    "batch_size": 1,
+    "rgb_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "rgb_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "tile": 512,
+    "overlap": 128,
+    "stride": 384,
+    "origins_yx": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        384
+      ],
+      [
+        0,
+        768
+      ],
+      [
+        0,
+        1152
+      ],
+      [
+        0,
+        1536
+      ],
+      [
+        384,
+        0
+      ],
+      [
+        384,
+        384
+      ],
+      [
+        384,
+        768
+      ],
+      [
+        384,
+        1152
+      ],
+      [
+        384,
+        1536
+      ],
+      [
+        768,
+        0
+      ],
+      [
+        768,
+        384
+      ],
+      [
+        768,
+        768
+      ],
+      [
+        768,
+        1152
+      ],
+      [
+        768,
+        1536
+      ],
+      [
+        1152,
+        0
+      ],
+      [
+        1152,
+        384
+      ],
+      [
+        1152,
+        768
+      ],
+      [
+        1152,
+        1152
+      ],
+      [
+        1152,
+        1536
+      ],
+      [
+        1536,
+        0
+      ],
+      [
+        1536,
+        384
+      ],
+      [
+        1536,
+        768
+      ],
+      [
+        1536,
+        1152
+      ],
+      [
+        1536,
+        1536
+      ]
+    ],
+    "resize": null,
+    "crop": null,
+    "coreset": "Anomalib sparse random projection and greedy k-center",
+    "coreset_ratio": 0.1,
+    "nearest_neighbors": 9,
+    "query_chunk": 512,
+    "bank_chunk": 8192,
+    "feature_aggregation": "3x3 mean pooling, bilinear layer3 upsampling, channel concatenation",
+    "tile_map": "nearest-neighbor upsampling and Gaussian smoothing (sigma 4 px)",
+    "stitching": "average raw tile maps per pixel",
+    "display_scale": [
+      0,
+      25.78128433227539
+    ],
+    "threshold": null
+  },
+  "environment": {
+    "python": "3.12.13",
+    "torch": "2.9.1+cu128",
+    "torchvision": "0.24.1+cu128",
+    "anomalib": "2.2.0",
+    "cuda_available": true,
+    "cuda_runtime": "12.8",
+    "cudnn": 91002,
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "gpu_total_mib": 8187.5,
+    "gpu_free_at_start_mib": 7060.0,
+    "system_ram_mib": 15554.36328125
+  },
+  "observed": {
+    "input": [
+      1,
+      3,
+      512,
+      512
+    ],
+    "input_dtype": "torch.float32",
+    "features": {
+      "layer2": [
+        1,
+        512,
+        64,
+        64
+      ],
+      "layer3": [
+        1,
+        1024,
+        32,
+        32
+      ]
+    },
+    "feature_dtypes": {
+      "layer2": "torch.float32",
+      "layer3": "torch.float32"
+    },
+    "embedding_per_tile": [
+      4096,
+      1536
+    ],
+    "candidate_bank": [
+      102400,
+      1536
+    ],
+    "memory_bank": [
+      10240,
+      1536
+    ],
+    "memory_bank_mib": 60.0,
+    "reload_max_abs_map_error": 0.0,
+    "reload_max_abs_tile_score_error": 0.0
+  },
+  "measurements": {
+    "load_backbone": {
+      "seconds": 0.772,
+      "rss_peak_mib_sampled": 1509.9,
+      "cuda_peak_allocated_mib": 273.1,
+      "cuda_peak_reserved_mib": 298.0
+    },
+    "extract_regular_normal": {
+      "seconds": 0.746,
+      "rss_peak_mib_sampled": 1725.6,
+      "cuda_peak_allocated_mib": 915.2,
+      "cuda_peak_reserved_mib": 996.0
+    },
+    "fit_coreset": {
+      "seconds": 16.744,
+      "rss_peak_mib_sampled": 1976.3,
+      "cuda_peak_allocated_mib": 1473.1,
+      "cuda_peak_reserved_mib": 1820.0
+    },
+    "infer_0004": {
+      "seconds": 1.119,
+      "rss_peak_mib_sampled": 2095.9,
+      "cuda_peak_allocated_mib": 453.2,
+      "cuda_peak_reserved_mib": 1822.0
+    },
+    "infer_0074": {
+      "seconds": 1.108,
+      "rss_peak_mib_sampled": 2134.7,
+      "cuda_peak_allocated_mib": 453.2,
+      "cuda_peak_reserved_mib": 1822.0
+    },
+    "infer_0097": {
+      "seconds": 1.107,
+      "rss_peak_mib_sampled": 2167.2,
+      "cuda_peak_allocated_mib": 453.2,
+      "cuda_peak_reserved_mib": 1822.0
+    },
+    "save_reload_verify": {
+      "seconds": 2.265,
+      "rss_peak_mib_sampled": 2302.1,
+      "cuda_peak_allocated_mib": 524.4,
+      "cuda_peak_reserved_mib": 1832.0
+    },
+    "save_visuals": {
+      "seconds": 2.39,
+      "rss_peak_mib_sampled": 2316.3,
+      "cuda_peak_allocated_mib": 432.3,
+      "cuda_peak_reserved_mib": 1832.0
+    }
+  },
+  "samples": [
+    {
+      "sample_id": "regular/0004",
+      "anomaly_map_shape": [
+        2048,
+        2048
+      ],
+      "raw_map_min": 0.0396832637488842,
+      "raw_map_max": 19.961002349853516,
+      "mean_inside_ground_truth": 11.488700866699219,
+      "mean_outside_ground_truth": 6.512292385101318,
+      "foreground_pixels": 2297,
+      "image_score_max_tile_score": 21.202199935913086,
+      "tile_scores_in_row_major_order": [
+        10.283646583557129,
+        13.443233489990234,
+        13.193300247192383,
+        10.72484016418457,
+        15.310481071472168,
+        10.34206485748291,
+        13.193286895751953,
+        13.04444694519043,
+        20.065509796142578,
+        21.202199935913086,
+        10.688236236572266,
+        10.566961288452148,
+        10.890542030334473,
+        19.557214736938477,
+        17.598663330078125,
+        11.46292495727539,
+        11.518753051757812,
+        11.050520896911621,
+        20.4666748046875,
+        11.023161888122559,
+        10.620708465576172,
+        11.132203102111816,
+        10.923249244689941,
+        11.10230827331543,
+        10.896422386169434
+      ]
+    },
+    {
+      "sample_id": "regular/0074",
+      "anomaly_map_shape": [
+        2048,
+        2048
+      ],
+      "raw_map_min": 0.03009101375937462,
+      "raw_map_max": 21.549301147460938,
+      "mean_inside_ground_truth": 13.495784759521484,
+      "mean_outside_ground_truth": 6.561964988708496,
+      "foreground_pixels": 25801,
+      "image_score_max_tile_score": 22.550756454467773,
+      "tile_scores_in_row_major_order": [
+        10.290173530578613,
+        14.739447593688965,
+        13.347172737121582,
+        14.444761276245117,
+        13.826170921325684,
+        10.163199424743652,
+        19.035362243652344,
+        16.485939025878906,
+        20.61630630493164,
+        20.87561798095703,
+        15.664619445800781,
+        18.606409072875977,
+        16.881505966186523,
+        20.578908920288086,
+        20.74527931213379,
+        11.43591022491455,
+        11.518600463867188,
+        22.019493103027344,
+        22.550756454467773,
+        11.022116661071777,
+        10.617554664611816,
+        11.131976127624512,
+        10.924581527709961,
+        11.103568077087402,
+        10.895957946777344
+      ]
+    },
+    {
+      "sample_id": "regular/0097",
+      "anomaly_map_shape": [
+        2048,
+        2048
+      ],
+      "raw_map_min": 0.046951524913311005,
+      "raw_map_max": 25.78128433227539,
+      "mean_inside_ground_truth": 14.036028861999512,
+      "mean_outside_ground_truth": 6.62458610534668,
+      "foreground_pixels": 78663,
+      "image_score_max_tile_score": 25.753522872924805,
+      "tile_scores_in_row_major_order": [
+        10.28333568572998,
+        17.451892852783203,
+        16.904022216796875,
+        10.742003440856934,
+        18.92667579650879,
+        10.138686180114746,
+        16.916213989257812,
+        17.971227645874023,
+        15.858963966369629,
+        18.774097442626953,
+        14.601628303527832,
+        19.681838989257812,
+        19.34736442565918,
+        16.189483642578125,
+        11.585954666137695,
+        14.84035873413086,
+        20.53035545349121,
+        25.753522872924805,
+        23.702415466308594,
+        11.024699211120605,
+        10.61801815032959,
+        11.156232833862305,
+        20.315088272094727,
+        11.10006046295166,
+        11.016656875610352
+      ]
+    }
+  ],
+  "capacity_estimates": {
+    "70": {
+      "per_color": true,
+      "tiles": 1750,
+      "candidate_rows": 7168000,
+      "candidate_gib": 41.015625,
+      "stock_vstack_lower_bound_gib": 82.03125,
+      "stock_projected_matrix_gib": 10.387420654296875,
+      "coreset_rows": 716800,
+      "coreset_gib": 4.1015625,
+      "unchunked_distance_gib_per_tile": 10.9375,
+      "bounded_distance_block_mib": 16.0,
+      "sampled_candidates_64_per_tile_mib": 656.25
+    },
+    "100": {
+      "per_color": true,
+      "tiles": 2500,
+      "candidate_rows": 10240000,
+      "candidate_gib": 58.59375,
+      "stock_vstack_lower_bound_gib": 117.1875,
+      "stock_projected_matrix_gib": 15.1824951171875,
+      "coreset_rows": 1024000,
+      "coreset_gib": 5.859375,
+      "unchunked_distance_gib_per_tile": 15.625,
+      "bounded_distance_block_mib": 16.0,
+      "sampled_candidates_64_per_tile_mib": 937.5
+    }
+  }
+}
