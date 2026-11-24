@@ -39,3 +39,5 @@ PatchCore and AnomalyDINO completed validation on regular, red and green lightin
 | Green | 0.8346 | 0.6867 |
 
 The two-model results, including image- and pixel-level metrics, are available alongside the charts. [PatchCore report](Anamoly_detection/patchcore/runs/lighting_benchmark_20261124T084630_908213Z/report.json) · [AnomalyDINO report](Anamoly_detection/anomalydino/runs/anomalydino_20261124T091730_300718Z/report.json) · [Comparison chart](Anamoly_detection/anomalydino/runs/anomalydino_20261124T091730_300718Z/model_comparison.png) · [Comparison CSV](Anamoly_detection/anomalydino/runs/anomalydino_20261124T091730_300718Z/model_comparison.csv)
+
+Git LFS stores the six fitted states listed in the journal and the validation artifact archives. The consolidated PatchCore archive covers the regular and green score maps and the three-color figures. The Phase 3 archive contains the red maps. [PatchCore validation artifacts](Anamoly_detection/benchmark_exports/patchcore_validation_artifacts.zip) · [AnomalyDINO validation artifacts](Anamoly_detection/benchmark_exports/anomalydino_validation_artifacts.zip)
