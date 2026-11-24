@@ -9,6 +9,7 @@ This thesis project uses **ANNAlyzer**, a Blender simulation of an industrial in
 | [Dataset and rendering guide](Anamoly_detection/README.md) | Inspection setup, defect generation, lighting conditions and dataset layout |
 | [Blender scenes](synthetic_dataset/) and [render scripts](scripts/) | Tray models, inspection-cell controls and batch rendering |
 | [PatchCore setup](Anamoly_detection/patchcore/README.md) | Pinned CUDA environment and single-reference smoke test |
+| [AnomalyDINO setup](Anamoly_detection/anomalydino/README.md) | Isolated environment, frozen DINOv2 encoder and validation runner |
 | [Research journal](Anamoly_detection/JOURNAL.md) | Dataset audit, experiment decisions and measured results |
 | [Smoke-test report](Anamoly_detection/patchcore/runs/regular_smoke_20261124T072401_611224Z/report.json) | Tensor shapes, timings, memory use and raw scores |
 | [Grouped split](Anamoly_detection/patchcore/split_v1.json) and [red validation report](Anamoly_detection/patchcore/runs/red_phase3_20261124T075750_651308Z/report.json) | Reproducible setup assignments, coreset comparison and stitching results |
@@ -27,4 +28,14 @@ Phase 3 froze a 70/15/15 split for red and green using the same setup IDs in eac
 
 The red validation outputs include a side-by-side comparison, full-resolution heatmaps and ground-truth overlays, and the continuous FP32 score maps. The two ZIP archives are tracked with Git LFS. [Visual comparison](Anamoly_detection/patchcore/runs/red_phase3_20261124T075750_651308Z/comparison.png) · [Validation figures ZIP](Anamoly_detection/patchcore/runs/red_phase3_20261124T075750_651308Z/validation_figures.zip) · [Raw score maps ZIP](Anamoly_detection/patchcore/runs/red_phase3_20261124T075750_651308Z/raw_score_maps.zip)
 
-Green validation and final test evaluation remain pending. The results so far describe the synthetic inspection cell.
+## Validation benchmark
+
+PatchCore and AnomalyDINO completed validation on regular, red and green lighting. The two methods use the frozen 70/15/15 setup-ID assignment for the colored cohorts. The regular cohort uses one fixed normal reference and three defective development frames. Its image-level metrics are N/A because it has zero independent normal validation frames. The final test sets remain reserved.
+
+| Lighting | PatchCore AUPRO at 30% FPR | AnomalyDINO AUPRO at 30% FPR |
+| --- | ---: | ---: |
+| Regular | 0.7015 | 0.5385 |
+| Red | 0.8177 | 0.6304 |
+| Green | 0.8346 | 0.6867 |
+
+The two-model results, including image- and pixel-level metrics, are available alongside the charts. [PatchCore report](Anamoly_detection/patchcore/runs/lighting_benchmark_20261124T084630_908213Z/report.json) · [AnomalyDINO report](Anamoly_detection/anomalydino/runs/anomalydino_20261124T091730_300718Z/report.json) · [Comparison chart](Anamoly_detection/anomalydino/runs/anomalydino_20261124T091730_300718Z/model_comparison.png) · [Comparison CSV](Anamoly_detection/anomalydino/runs/anomalydino_20261124T091730_300718Z/model_comparison.csv)

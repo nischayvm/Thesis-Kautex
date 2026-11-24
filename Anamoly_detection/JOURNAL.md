@@ -175,3 +175,106 @@ Shared extraction plus coreset took 54.25 s for the 64-candidate budget and 117.
 ### Configuration selected on red validation
 
 Use **128 spatially stratified candidates per tile, a 10% coreset, and Gaussian stitching with sigma 128 px per axis**. The larger bank improved localization across size bands and fitted within the RTX 4060 memory budget. Gaussian stitching improved all three pooled pixel metrics at that budget and substantially reduced the measured seam step. Check the selected configuration on the matched green validation fold before drawing cross-lighting conclusions. The red result is based on 15 synthetic validation setups using one seed. Final test evaluation remains reserved.
+
+## 2026-11-24 · Preliminary PatchCore benchmark across lighting conditions
+
+### Fixed configuration and cohorts
+
+Used the selected Phase 3 configuration for both new fits and carried forward the saved red validation scores and bank. The shared pipeline uses frozen ImageNet-pretrained WideResNet50-2 `layer2` and `layer3`, native 512 × 512 RGB tiles with a 128 px overlap, ImageNet channel normalization, FP32 with TF32 disabled, batch size 1, 128 spatially stratified candidates per tile, a 10% projected greedy k-center coreset, nine-neighbor weighted tile scores, exact chunked search, seed 24117, and Gaussian stitching with sigma 128 px per axis. The shared finite-value assertion now checks candidates in chunks to avoid a large temporary GPU allocation. Candidate selection and coreset computation are unchanged. [Frozen split](patchcore/split_v1.json) · [Selected red reference report](patchcore/runs/red_phase3_20261124T075750_651308Z/report.json) · [Benchmark runner](patchcore/lighting_benchmark.py)
+
+Red and green each use the same 70 training capture IDs and 15 validation capture IDs, with one clean and one defective image per validation setup. Regular uses only `regular/normal/0001.png` for training. Its three validation defects are `regular/0004`, `regular/0074` and `regular/0097`. Regular image AUROC and image AP are N/A because the regular protocol has no independent clean validation frame. Its pixel metrics use foreground and background pixels from the three defective frames. This differs from the red and green pixel cohorts, which also include 15 clean frames each. The split and source dataset were retained as recorded. The reserved test cohorts remained outside fitting and validation.
+
+All frames use the Front Left inspection camera. Regular has a fixed camera height of 1.610 m, a nominal LED height of 1.102 m, base rig and ceiling intensities of 1.0, and no dark-field mixing. The colored training sets share camera heights of 1.281–1.608 m and nominal LED heights of 1.103–1.592 m. The colored validation sets share camera heights of 1.315–1.605 m and nominal LED heights of 1.118–1.536 m. Effective LED heights in the colored validation sets range from 1.084–1.536 m, and three of the 15 validation setups use partial dark field. The two colored cohorts match in placement and recorded intensity schedule at each ID and generate defects independently. The regular condition additionally differs in training coverage, view geometry and the size of its validation cohort.
+
+The benchmark uses the Phase 3 full-frame metrics, including AUPRO at 30% pooled background FPR and size-specific component overlap at a diagnostic 1% FPR. Each score histogram uses 65,536 bins spanning its validation score range, with the saved red metrics retained at their original bin range. Scores remain continuous in the saved maps. A shared display scale is used for the three-color heatmap comparison. No operating threshold was calibrated.
+
+Run from `Anamoly_detection/patchcore` after the Phase 2 environment is installed. The runner expects the existing red raw maps and overlays alongside the Phase 3 report. The archived copies can be extracted into the original red run directory.
+
+```powershell
+.\.venv\Scripts\python.exe -u lighting_benchmark.py
+```
+
+### Consolidated validation results
+
+| Lighting | Training normals | Validation normal / defective | Pixel AUROC | Pixel AP | AUPRO at 30% FPR | Image AUROC | Image AP |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Regular | 1 | 0 / 3 | 0.8061 | 0.0534 | 0.7015 | N/A | N/A |
+| Red | 70 | 15 / 15 | 0.9486 | 0.2960 | 0.8177 | 0.9200 | 0.9314 |
+| Green | 70 | 15 / 15 | 0.9455 | 0.2930 | 0.8346 | 0.9156 | 0.9220 |
+
+| Lighting | Recorded flange / laminate instances | Visible mask components | Positive pixels |
+| --- | ---: | ---: | ---: |
+| Regular | 27 / 18 | 50 | 106,761 |
+| Red | 125 / 82 | 222 | 457,885 |
+| Green | 131 / 74 | 223 | 482,793 |
+
+Instance totals count generated geometry. Connected components count visible mask regions, which can split around ribs or occlusions. Red and green use the same setup schedule with independently seeded defects, so their modest metric differences reflect both lighting color and differences in the rendered defects. Across the matched setup cohorts, red had slightly higher pixel and image ranking scores, and green had higher region overlap. The regular heatmaps showed strong responses along ribs, rims and background edges. Its small cohort, single clean reference and fixed setup limit direct comparison with the colored cohorts.
+
+| Lighting | Small components¹ | Medium components¹ | Large components¹ |
+| --- | ---: | ---: | ---: |
+| Regular | 14 · 0.843 / 0.150 | 15 · 0.743 / 0.394 | 21 · 0.578 / 0.102 |
+| Red | 78 · 0.733 / 0.326 | 58 · 0.894 / 0.754 | 86 · 0.843 / 0.519 |
+| Green | 88 · 0.779 / 0.372 | 49 · 0.904 / 0.718 | 86 · 0.852 / 0.554 |
+
+¹ Each cell gives the component count, AUPRO at 30% FPR, and mean overlap at 1% FPR. Size bands use visible area below 64, 64–511 and at least 512 px². Regular's small-component AUPRO is based on 14 regions and its mean small-component overlap at 1% FPR is 0.150. Halving histogram resolution changed the reported pooled pixel metrics by at most 0.000020 across the three results.
+
+### Fitted models and artifacts
+
+| Lighting | Candidate vectors | Fitted bank | Extraction / coreset time | Mean validation inference and stitch |
+| --- | ---: | --- | ---: | ---: |
+| Regular | 3,200 | 320 × 1,536 · 1.875 MiB | 1.68 / 0.50 s | 0.67 s/frame |
+| Red | 224,000 | 22,400 × 1,536 · 131.25 MiB | 34.12 / 83.35 s | 1.89 s/frame |
+| Green | 224,000 | 22,400 × 1,536 · 131.25 MiB | 34.92 / 85.22 s | 1.88 s/frame |
+
+The red resource measurements are from Phase 3. Green peaked at 2,206 MiB allocated VRAM during coreset selection and 3,432 MiB sampled process RAM during extraction. The consolidated report stores per-stage allocator and working-set measurements and the hashes of all three standalone fitted states. The red state was packaged with the saved Phase 3 bank and original backbone weights. Its historical metrics, raw scores and bank were retained.
+
+[Comparison CSV](patchcore/runs/lighting_benchmark_20261124T084630_908213Z/comparison.csv) · [Consolidated report](patchcore/runs/lighting_benchmark_20261124T084630_908213Z/report.json) · [Validation metric chart](patchcore/runs/lighting_benchmark_20261124T084630_908213Z/validation_metrics.png) · [Defect-size chart](patchcore/runs/lighting_benchmark_20261124T084630_908213Z/defect_size_metrics.png) · [Heatmaps and ground-truth panel](patchcore/runs/lighting_benchmark_20261124T084630_908213Z/lighting_heatmaps.png)
+
+[Fitted regular model](patchcore/runs/lighting_benchmark_20261124T084630_908213Z/regular/fitted_state.pt) · [Fitted red model](patchcore/runs/lighting_benchmark_20261124T084630_908213Z/red/fitted_state.pt) · [Fitted green model](patchcore/runs/lighting_benchmark_20261124T084630_908213Z/green/fitted_state.pt)
+
+## 2026-11-24 · Model 2 AnomalyDINO
+
+The PatchCore freeze records SHA-256 hashes for its implementation, split, lockfile, environment metadata, pretrained weights, and all files in the three completed runs. AnomalyDINO uses its own `.venv`, package lock, model cache and output directories. The AnomalyDINO runner reads the frozen split, cohort records, stitcher, evaluator and saved PatchCore report. [Freeze manifest](anomalydino/patchcore_freeze_v1.json) · [AnomalyDINO setup](anomalydino/README.md) · [Runner](anomalydino/run.py)
+
+The AnomalyDINO environment uses Python 3.12.13, Anomalib 2.5.1, timm 1.0.27, PyTorch 2.9.1+cu128 and TorchVision 0.24.1+cu128. The backbone is the frozen DINOv2 ViT-S/14 checkpoint `vit_small_patch14_dinov2.lvd142m`, pinned by revision and SHA-256. Fitting uses normal samples only, with foreground masking and reference augmentation disabled. Anomalib 2.5.1's k-center includes its seeded initial center in the returned bank. [Anomalib AnomalyDINO reference](https://anomalib.readthedocs.io/en/lib-v2.5.1/markdown/guides/reference/models/image/anomaly_dino.html) · [Pinned encoder weights](https://huggingface.co/timm/vit_small_patch14_dinov2.lvd142m/blob/4610ca143709d58a633b6397a74412c2c3842454/model.safetensors)
+
+AnomalyDINO keeps the original 512 × 512 tile coordinates, 128 px overlap, ImageNet RGB normalization, FP32, batch size 1, seed 24117 and Gaussian stitching with sigma 128 px. Reflection padding adds three pixels per side so the encoder receives 518 × 518 while preserving every native pixel. The last transformer block supplies 37 × 37 tokens of width 384. The border is removed from each generated map before stitching. For each tile the fit takes 128 spatially stratified tokens, two per cell of an 8 × 8 partition of the token grid, and applies the 10% projected greedy k-center coreset. Cosine search uses one nearest neighbor with 512-query and 8,192-bank chunks. AnomalyDINO's tile score is the mean of the top 1% of token distances. The frame score is the maximum of its tile scores. These model-specific choices replace PatchCore's convolutional features, Euclidean search and weighted tile score.
+
+The CUDA smoke test fitted 12 bank vectors from one red normal tile and evaluated a red validation tile. It confirmed the 518 × 518 encoder input, 1,369 × 384 patch features, and aligned 512 × 512 output. The maximum difference between chunked and stock dense Anomalib maps was 3.58e-7. Reloading the saved state reproduced the smoke map exactly. The full runs use the identical red, green and regular validation cohorts and pixel metric definitions as PatchCore. Regular image AUROC and AP are N/A because its validation fold has zero independent clean frames. The final test sets remain reserved.
+
+### Validation results
+
+| Lighting | Model | Pixel AUROC | Pixel AP | AUPRO at 30% FPR | Image AUROC | Image AP |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Regular | PatchCore | 0.8061 | 0.0534 | 0.7015 | N/A | N/A |
+| Regular | AnomalyDINO | 0.7437 | 0.0824 | 0.5385 | N/A | N/A |
+| Red | PatchCore | 0.9486 | 0.2960 | 0.8177 | 0.9200 | 0.9314 |
+| Red | AnomalyDINO | 0.8378 | 0.1346 | 0.6304 | 0.8711 | 0.8857 |
+| Green | PatchCore | 0.9455 | 0.2930 | 0.8346 | 0.9156 | 0.9220 |
+| Green | AnomalyDINO | 0.8317 | 0.1656 | 0.6867 | 0.8667 | 0.8873 |
+
+| Lighting | Small AUPRO / overlap¹ | Medium AUPRO / overlap¹ | Large AUPRO / overlap¹ |
+| --- | ---: | ---: | ---: |
+| Regular | 0.706 / 0.157 | 0.614 / 0.200 | 0.373 / 0.127 |
+| Red | 0.548 / 0.409 | 0.790 / 0.692 | 0.597 / 0.326 |
+| Green | 0.687 / 0.526 | 0.791 / 0.653 | 0.627 / 0.344 |
+
+¹ These are AnomalyDINO results. Each cell gives AUPRO at 30% pooled background FPR and mean visible-component overlap at a diagnostic 1% FPR, using the same <64, 64–511, and ≥512 px² bins as PatchCore. Halving score-histogram resolution changed AnomalyDINO's pooled metrics by at most 0.000009.
+
+PatchCore led on aggregate AUPRO in all three conditions and on both colored image-level metrics. AnomalyDINO had higher pixel AP on the three regular defects. At the stricter 1% background FPR, AnomalyDINO also recovered more pixels within small components on red (0.409 versus 0.326 mean overlap) and green (0.526 versus 0.372). These observations describe fixed synthetic validation cohorts and the selected single configuration for each method.
+
+### Fitted states and resources
+
+| Lighting | Candidate vectors | Fitted bank | Candidate extraction / coreset | Mean inference and stitch |
+| --- | ---: | ---: | ---: | ---: |
+| Regular | 3,200 | 320 × 384 · 0.469 MiB | 0.89 / 0.08 s | 0.59 s/frame |
+| Red | 224,000 | 22,400 × 384 · 32.81 MiB | 44.48 / 83.88 s | 0.66 s/frame |
+| Green | 224,000 | 22,400 × 384 · 32.81 MiB | 43.99 / 83.90 s | 0.67 s/frame |
+
+The RTX 4060 run peaked at 955 MiB of allocated CUDA memory and 1,993 MiB of sampled process RAM. Red and green inference took about one third of the measured PatchCore time on the same cohorts. The saved state for each condition includes its frozen encoder and fitted bank. Each bank was confirmed after reloading the state. The report includes individual scores, runtime and environment measurements, and model hashes. The display heatmaps use a common AnomalyDINO range. The raw maps preserve the original cosine-distance score scale.
+
+Ran `.\.venv\Scripts\python.exe -u run.py` from `Anamoly_detection/anomalydino`. Rechecking the PatchCore freeze after the benchmark matched all 447 fingerprints.
+
+[Consolidated report](anomalydino/runs/anomalydino_20261124T091730_300718Z/report.json) · [Cross-model metrics CSV](anomalydino/runs/anomalydino_20261124T091730_300718Z/model_comparison.csv) · [Cross-model metric chart](anomalydino/runs/anomalydino_20261124T091730_300718Z/model_comparison.png) · [Defect-size chart](anomalydino/runs/anomalydino_20261124T091730_300718Z/defect_size_comparison.png) · [Heatmaps and ground-truth panel](anomalydino/runs/anomalydino_20261124T091730_300718Z/lighting_heatmaps.png)
+
+[Fitted regular state](anomalydino/runs/anomalydino_20261124T091730_300718Z/regular/fitted_state.pt) · [Fitted red state](anomalydino/runs/anomalydino_20261124T091730_300718Z/red/fitted_state.pt) · [Fitted green state](anomalydino/runs/anomalydino_20261124T091730_300718Z/green/fitted_state.pt)

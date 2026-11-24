@@ -65,7 +65,7 @@ def collect_candidates(model, training, mean, std):
             secondary[offset:offset + 64].copy_(chosen[64:])
             offset += 64
         if number % 10 == 0:
-            print(f"Extracted {number}/{len(training)} red training views", flush=True)
+            print(f"Extracted {number}/{len(training)} {record['lighting']} training views", flush=True)
     require(offset == count * 64 and not model.embedding_store, "Incorrect candidate count")
     model.eval()
     return primary, secondary
@@ -79,7 +79,8 @@ def fit_bank(primary, secondary, budget):
     candidates[:len(primary)].copy_(primary)
     if budget == 128:
         candidates[len(primary):].copy_(secondary)
-    require(torch.isfinite(candidates).all().item(), "Nonfinite training candidates")
+    require(all(torch.isfinite(block).all().item() for block in candidates.split(smoke.BANK_CHUNK)),
+            "Nonfinite training candidates")
     bank = KCenterGreedy(embedding=candidates, sampling_ratio=RATIO).sample_coreset()
     require(bank.shape == (int(count * RATIO), DIMENSION) and torch.isfinite(bank).all().item(), "Invalid coreset")
     return bank
@@ -129,17 +130,18 @@ def seam_steps(score):
     return mean_step(edges), mean_step(controls)
 
 
-def evaluate(model, validation, budget, stitcher, out, mean, std):
+def evaluate(model, validation, budget, stitcher, out, mean, std, stitches=STITCHES, include_normal=True):
     results = []
+    roles = ("normal", "bubbles") if include_normal else ("bubbles",)
     for index, record in enumerate(validation, 1):
         sample = record["sample_id"].split("/")[-1]
-        for role in ("normal", "bubbles"):
+        for role in roles:
             image = load_asset(record["files"][role], "RGB")
             start = perf_counter()
             tiles, score = infer_tiles(model, image, mean, std)
             row = {"sample_id": record["sample_id"], "role": role, "score": score,
                    "tile_inference_s": perf_counter() - start, "maps": {}}
-            for stitch in STITCHES:
+            for stitch in stitches:
                 start = perf_counter()
                 raw = stitcher.apply(tiles, stitch)
                 elapsed = perf_counter() - start
@@ -152,7 +154,7 @@ def evaluate(model, validation, budget, stitcher, out, mean, std):
                     row["maps"][stitch].update(seam_step=seam, control_step=control)
             results.append(row)
         if index % 5 == 0:
-            print(f"{budget} candidates: scored {index}/{len(validation)} red validation pairs", flush=True)
+            print(f"{budget} candidates: scored {index}/{len(validation)} {record['lighting']} validation setups", flush=True)
     return results
 
 

@@ -1,0 +1,1506 @@
+{
+  "method": "Anomalib AnomalyDINO",
+  "configuration": {
+    "encoder": "vit_small_patch14_dinov2.lvd142m",
+    "encoder_revision": "4610ca143709d58a633b6397a74412c2c3842454",
+    "encoder_sha256": "04d27f3400d059fc0cfd7d17dd1909a75bf3ea8fb3eeb48b97cb99e57ee20081",
+    "seed": 24117,
+    "precision": "FP32; TF32 disabled",
+    "backbone_frozen": true,
+    "batch_size": 1,
+    "reference_augmentation": false,
+    "foreground_masking": false,
+    "rgb_mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "rgb_std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "tile": 512,
+    "tile_origins_yx": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        384
+      ],
+      [
+        0,
+        768
+      ],
+      [
+        0,
+        1152
+      ],
+      [
+        0,
+        1536
+      ],
+      [
+        384,
+        0
+      ],
+      [
+        384,
+        384
+      ],
+      [
+        384,
+        768
+      ],
+      [
+        384,
+        1152
+      ],
+      [
+        384,
+        1536
+      ],
+      [
+        768,
+        0
+      ],
+      [
+        768,
+        384
+      ],
+      [
+        768,
+        768
+      ],
+      [
+        768,
+        1152
+      ],
+      [
+        768,
+        1536
+      ],
+      [
+        1152,
+        0
+      ],
+      [
+        1152,
+        384
+      ],
+      [
+        1152,
+        768
+      ],
+      [
+        1152,
+        1152
+      ],
+      [
+        1152,
+        1536
+      ],
+      [
+        1536,
+        0
+      ],
+      [
+        1536,
+        384
+      ],
+      [
+        1536,
+        768
+      ],
+      [
+        1536,
+        1152
+      ],
+      [
+        1536,
+        1536
+      ]
+    ],
+    "overlap": 128,
+    "padded_tile": 518,
+    "reflect_padding_pixels_per_side": 3,
+    "resize": null,
+    "input_crop": null,
+    "patch_size": 14,
+    "patch_grid": [
+      37,
+      37
+    ],
+    "feature_dim": 384,
+    "candidates_per_tile": 128,
+    "coreset_ratio": 0.1,
+    "sampler": "two distinct seeded tokens per cell of an 8 by 8 spatial partition",
+    "nearest_neighbors": 1,
+    "distance": "cosine",
+    "query_chunk": 512,
+    "bank_chunk": 8192,
+    "image_aggregation": "maximum over tile means of the largest 1% of token distances",
+    "stitching": "gaussian",
+    "gaussian_sigma_px": 128.0,
+    "threshold": null,
+    "split_sha256": "3234ec7635558c888f863aefe29d263399a47db5df2cba5aa4f5147a763c2677",
+    "patchcore_report_sha256": "b709041fde6ebde12412f56c8890028cdaa10df3530aa2db7c83eaf8ab8ef2d6"
+  },
+  "environment": {
+    "python": "3.12.13",
+    "torch": "2.9.1+cu128",
+    "torchvision": "0.24.1+cu128",
+    "anomalib": "2.5.1",
+    "timm": "1.0.27",
+    "cuda": "12.8",
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  },
+  "git_base": "3b31343c00335e9ba0df96c2582b9604b17e746f",
+  "runner_sha256": "71c75e4f4c9e1f51f92b9b45d0de5a175c4e4113cc958d45fc68df6d8e0b193a",
+  "smoke": {
+    "fit_id": "red/0001",
+    "validation_id": "red/0008",
+    "origin_yx": [
+      768,
+      768
+    ],
+    "native_input": [
+      1,
+      3,
+      512,
+      512
+    ],
+    "padded_input": [
+      1,
+      3,
+      518,
+      518
+    ],
+    "features": [
+      1,
+      1369,
+      384
+    ],
+    "bank": [
+      12,
+      384
+    ],
+    "map": [
+      1,
+      1,
+      512,
+      512
+    ],
+    "dense_comparison_max_error": 3.5762786865234375e-07,
+    "reload_max_error": 0.0
+  },
+  "shared_heatmap_display_scale": [
+    0,
+    0.543095588684082
+  ],
+  "lighting": {
+    "red": {
+      "train_ids": [
+        "red/0001",
+        "red/0003",
+        "red/0004",
+        "red/0005",
+        "red/0006",
+        "red/0007",
+        "red/0010",
+        "red/0011",
+        "red/0012",
+        "red/0013",
+        "red/0014",
+        "red/0015",
+        "red/0016",
+        "red/0017",
+        "red/0018",
+        "red/0021",
+        "red/0022",
+        "red/0023",
+        "red/0024",
+        "red/0025",
+        "red/0029",
+        "red/0030",
+        "red/0032",
+        "red/0034",
+        "red/0035",
+        "red/0037",
+        "red/0038",
+        "red/0039",
+        "red/0040",
+        "red/0043",
+        "red/0044",
+        "red/0048",
+        "red/0049",
+        "red/0052",
+        "red/0053",
+        "red/0054",
+        "red/0055",
+        "red/0056",
+        "red/0057",
+        "red/0058",
+        "red/0059",
+        "red/0060",
+        "red/0062",
+        "red/0063",
+        "red/0064",
+        "red/0066",
+        "red/0067",
+        "red/0070",
+        "red/0072",
+        "red/0073",
+        "red/0074",
+        "red/0076",
+        "red/0077",
+        "red/0078",
+        "red/0079",
+        "red/0080",
+        "red/0081",
+        "red/0082",
+        "red/0083",
+        "red/0084",
+        "red/0085",
+        "red/0086",
+        "red/0088",
+        "red/0089",
+        "red/0091",
+        "red/0092",
+        "red/0093",
+        "red/0094",
+        "red/0096",
+        "red/0100"
+      ],
+      "validation_ids": [
+        "red/0008",
+        "red/0019",
+        "red/0026",
+        "red/0027",
+        "red/0028",
+        "red/0041",
+        "red/0042",
+        "red/0045",
+        "red/0046",
+        "red/0061",
+        "red/0068",
+        "red/0069",
+        "red/0071",
+        "red/0075",
+        "red/0098"
+      ],
+      "validation_normal_count": 15,
+      "candidate_rows": 224000,
+      "checkpoint": {
+        "path": "red/fitted_state.pt",
+        "sha256": "c72a52b510aeb305af9bc959fee029388c8d243a9cbf4a6833b04a49446510f1",
+        "dimensions": [
+          22400,
+          384
+        ],
+        "bank_mib": 32.8125
+      },
+      "measurements": {
+        "red_load_encoder": {
+          "seconds": 0.209,
+          "rss_peak_mib_sampled": 1590.2,
+          "cuda_peak_allocated_mib": 93.5,
+          "cuda_peak_reserved_mib": 110.0
+        },
+        "red_candidate_extraction": {
+          "seconds": 44.479,
+          "rss_peak_mib_sampled": 1895.6,
+          "cuda_peak_allocated_mib": 125.5,
+          "cuda_peak_reserved_mib": 150.0
+        },
+        "red_coreset": {
+          "seconds": 83.88,
+          "rss_peak_mib_sampled": 1882.6,
+          "cuda_peak_allocated_mib": 954.5,
+          "cuda_peak_reserved_mib": 1084.0
+        },
+        "red_validation_inference": {
+          "seconds": 22.407,
+          "rss_peak_mib_sampled": 1718.5,
+          "cuda_peak_allocated_mib": 157.5,
+          "cuda_peak_reserved_mib": 442.0
+        }
+      },
+      "metric_score_max": 0.42463502287864685,
+      "metrics": {
+        "pixel_auroc": 0.8378198477525884,
+        "pixel_ap": 0.13456857978837825,
+        "aupro": 0.6304359209718085,
+        "positive_pixels": 457885,
+        "negative_pixels": 125371235,
+        "size_specific": {
+          "small_lt64": {
+            "components": 78,
+            "aupro": 0.5483350875285399,
+            "mean_overlap_at_1pct_fpr": 0.40942433423988306
+          },
+          "medium_64_to_511": {
+            "components": 58,
+            "aupro": 0.7903410239593369,
+            "mean_overlap_at_1pct_fpr": 0.6918108937985229
+          },
+          "large_ge512": {
+            "components": 86,
+            "aupro": 0.5970564911497205,
+            "mean_overlap_at_1pct_fpr": 0.32588875563023206
+          }
+        },
+        "half_bin_resolution_abs_difference": {
+          "pixel_auroc": 1.527404780432562e-08,
+          "pixel_ap": 7.90956180427016e-06,
+          "aupro": 4.814011345111169e-07
+        },
+        "mean_inference_s": 0.6629768000000695,
+        "image_auroc": 0.8711111111111112,
+        "image_ap": 0.8857150451887292,
+        "normal_seam": {
+          "step": 0.005406734285255273,
+          "control_step": 0.0008684990267890195,
+          "ratio": 6.225377482856646
+        }
+      },
+      "predictions": [
+        {
+          "sample_id": "red/0008",
+          "role": "normal",
+          "score": 0.24722769856452942,
+          "tile_inference_s": 0.6339220999998361,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0008_normal.npy",
+              "max": 0.3327925205230713,
+              "stitch_s": 0.01607730000068841,
+              "seam_step": 0.005510654300451279,
+              "control_step": 0.0008883392438292503
+            }
+          }
+        },
+        {
+          "sample_id": "red/0008",
+          "role": "bubbles",
+          "score": 0.2464386224746704,
+          "tile_inference_s": 0.6359058000016375,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0008_bubbles.npy",
+              "max": 0.32934707403182983,
+              "stitch_s": 0.014491099998849677
+            }
+          }
+        },
+        {
+          "sample_id": "red/0019",
+          "role": "normal",
+          "score": 0.22607332468032837,
+          "tile_inference_s": 0.638971299998957,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0019_normal.npy",
+              "max": 0.27590683102607727,
+              "stitch_s": 0.015045899999677204,
+              "seam_step": 0.005334042478352785,
+              "control_step": 0.0008755907183513045
+            }
+          }
+        },
+        {
+          "sample_id": "red/0019",
+          "role": "bubbles",
+          "score": 0.3005572259426117,
+          "tile_inference_s": 0.6419416000007914,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0019_bubbles.npy",
+              "max": 0.3395330309867859,
+              "stitch_s": 0.014805400000113877
+            }
+          }
+        },
+        {
+          "sample_id": "red/0026",
+          "role": "normal",
+          "score": 0.25936710834503174,
+          "tile_inference_s": 0.6375733000004402,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0026_normal.npy",
+              "max": 0.36674055457115173,
+              "stitch_s": 0.014198599999872386,
+              "seam_step": 0.005585466045886278,
+              "control_step": 0.000903845764696598
+            }
+          }
+        },
+        {
+          "sample_id": "red/0026",
+          "role": "bubbles",
+          "score": 0.31237950921058655,
+          "tile_inference_s": 0.6508135000003676,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0026_bubbles.npy",
+              "max": 0.36724111437797546,
+              "stitch_s": 0.014703599999847938
+            }
+          }
+        },
+        {
+          "sample_id": "red/0027",
+          "role": "normal",
+          "score": 0.27675384283065796,
+          "tile_inference_s": 0.6453323000005184,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0027_normal.npy",
+              "max": 0.2623652219772339,
+              "stitch_s": 0.01681289999942237,
+              "seam_step": 0.005497974343597889,
+              "control_step": 0.0008995422394946218
+            }
+          }
+        },
+        {
+          "sample_id": "red/0027",
+          "role": "bubbles",
+          "score": 0.3068651854991913,
+          "tile_inference_s": 0.6442590000006021,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0027_bubbles.npy",
+              "max": 0.3340841829776764,
+              "stitch_s": 0.01580899999862595
+            }
+          }
+        },
+        {
+          "sample_id": "red/0028",
+          "role": "normal",
+          "score": 0.2270393818616867,
+          "tile_inference_s": 0.645068199999514,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0028_normal.npy",
+              "max": 0.25925394892692566,
+              "stitch_s": 0.019764200000281562,
+              "seam_step": 0.005217414349317551,
+              "control_step": 0.0008533074287697673
+            }
+          }
+        },
+        {
+          "sample_id": "red/0028",
+          "role": "bubbles",
+          "score": 0.23326215147972107,
+          "tile_inference_s": 0.6423952000004647,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0028_bubbles.npy",
+              "max": 0.2792108356952667,
+              "stitch_s": 0.01883779999843682
+            }
+          }
+        },
+        {
+          "sample_id": "red/0041",
+          "role": "normal",
+          "score": 0.2035011649131775,
+          "tile_inference_s": 0.6501975999999559,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0041_normal.npy",
+              "max": 0.27950912714004517,
+              "stitch_s": 0.016001300000425545,
+              "seam_step": 0.0049566831439733505,
+              "control_step": 0.000828977907076478
+            }
+          }
+        },
+        {
+          "sample_id": "red/0041",
+          "role": "bubbles",
+          "score": 0.29839134216308594,
+          "tile_inference_s": 0.6463057000000845,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0041_bubbles.npy",
+              "max": 0.37084734439849854,
+              "stitch_s": 0.019869300000209478
+            }
+          }
+        },
+        {
+          "sample_id": "red/0042",
+          "role": "normal",
+          "score": 0.27615633606910706,
+          "tile_inference_s": 0.644467900001473,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0042_normal.npy",
+              "max": 0.278879851102829,
+              "stitch_s": 0.01707460000034189,
+              "seam_step": 0.005077826790511608,
+              "control_step": 0.000793757732026279
+            }
+          }
+        },
+        {
+          "sample_id": "red/0042",
+          "role": "bubbles",
+          "score": 0.2752796709537506,
+          "tile_inference_s": 0.6470726999996259,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0042_bubbles.npy",
+              "max": 0.3034006953239441,
+              "stitch_s": 0.01873390000037034
+            }
+          }
+        },
+        {
+          "sample_id": "red/0045",
+          "role": "normal",
+          "score": 0.2139253318309784,
+          "tile_inference_s": 0.6480757999997877,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0045_normal.npy",
+              "max": 0.26284581422805786,
+              "stitch_s": 0.017517899999802466,
+              "seam_step": 0.0052040196023881435,
+              "control_step": 0.0008224318735301495
+            }
+          }
+        },
+        {
+          "sample_id": "red/0045",
+          "role": "bubbles",
+          "score": 0.24951495230197906,
+          "tile_inference_s": 0.6478907000000618,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0045_bubbles.npy",
+              "max": 0.2705867290496826,
+              "stitch_s": 0.015955700000631623
+            }
+          }
+        },
+        {
+          "sample_id": "red/0046",
+          "role": "normal",
+          "score": 0.24779607355594635,
+          "tile_inference_s": 0.6512708000009297,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0046_normal.npy",
+              "max": 0.32480746507644653,
+              "stitch_s": 0.018224200000986457,
+              "seam_step": 0.005314039532095194,
+              "control_step": 0.0008231656393036246
+            }
+          }
+        },
+        {
+          "sample_id": "red/0046",
+          "role": "bubbles",
+          "score": 0.3098077178001404,
+          "tile_inference_s": 0.6501068000015948,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0046_bubbles.npy",
+              "max": 0.3261277675628662,
+              "stitch_s": 0.021823199998834752
+            }
+          }
+        },
+        {
+          "sample_id": "red/0061",
+          "role": "normal",
+          "score": 0.21555118262767792,
+          "tile_inference_s": 0.6440703000007488,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0061_normal.npy",
+              "max": 0.26877039670944214,
+              "stitch_s": 0.015671499999371008,
+              "seam_step": 0.005000244360417128,
+              "control_step": 0.0008146288455463946
+            }
+          }
+        },
+        {
+          "sample_id": "red/0061",
+          "role": "bubbles",
+          "score": 0.2774239480495453,
+          "tile_inference_s": 0.6452255999993213,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0061_bubbles.npy",
+              "max": 0.42463502287864685,
+              "stitch_s": 0.017933700000867248
+            }
+          }
+        },
+        {
+          "sample_id": "red/0068",
+          "role": "normal",
+          "score": 0.19886410236358643,
+          "tile_inference_s": 0.6506420000005164,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0068_normal.npy",
+              "max": 0.24160544574260712,
+              "stitch_s": 0.017736100000547594,
+              "seam_step": 0.005700728856027126,
+              "control_step": 0.0009424665477126837
+            }
+          }
+        },
+        {
+          "sample_id": "red/0068",
+          "role": "bubbles",
+          "score": 0.29933443665504456,
+          "tile_inference_s": 0.6531816999995499,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0068_bubbles.npy",
+              "max": 0.3123926818370819,
+              "stitch_s": 0.01850640000157
+            }
+          }
+        },
+        {
+          "sample_id": "red/0069",
+          "role": "normal",
+          "score": 0.21253623068332672,
+          "tile_inference_s": 0.6499995000012859,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0069_normal.npy",
+              "max": 0.25699007511138916,
+              "stitch_s": 0.018405599999823608,
+              "seam_step": 0.005463228095322847,
+              "control_step": 0.0008669315138831735
+            }
+          }
+        },
+        {
+          "sample_id": "red/0069",
+          "role": "bubbles",
+          "score": 0.3220402002334595,
+          "tile_inference_s": 0.644600999999966,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0069_bubbles.npy",
+              "max": 0.36490094661712646,
+              "stitch_s": 0.01642559999891091
+            }
+          }
+        },
+        {
+          "sample_id": "red/0071",
+          "role": "normal",
+          "score": 0.20714782178401947,
+          "tile_inference_s": 0.643455499999618,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0071_normal.npy",
+              "max": 0.30085116624832153,
+              "stitch_s": 0.019226899999921443,
+              "seam_step": 0.005480833351612091,
+              "control_step": 0.0008718202007003129
+            }
+          }
+        },
+        {
+          "sample_id": "red/0071",
+          "role": "bubbles",
+          "score": 0.23364585638046265,
+          "tile_inference_s": 0.6480504999999539,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0071_bubbles.npy",
+              "max": 0.3389895558357239,
+              "stitch_s": 0.017428999999538064
+            }
+          }
+        },
+        {
+          "sample_id": "red/0075",
+          "role": "normal",
+          "score": 0.20989491045475006,
+          "tile_inference_s": 0.6491320999994059,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0075_normal.npy",
+              "max": 0.26063215732574463,
+              "stitch_s": 0.017988399999012472,
+              "seam_step": 0.005920266266912222,
+              "control_step": 0.0009577159653417766
+            }
+          }
+        },
+        {
+          "sample_id": "red/0075",
+          "role": "bubbles",
+          "score": 0.2615213394165039,
+          "tile_inference_s": 0.6495823000004748,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0075_bubbles.npy",
+              "max": 0.3300916254520416,
+              "stitch_s": 0.01831330000095477
+            }
+          }
+        },
+        {
+          "sample_id": "red/0098",
+          "role": "normal",
+          "score": 0.26283931732177734,
+          "tile_inference_s": 0.6434026999995694,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0098_normal.npy",
+              "max": 0.2941761314868927,
+              "stitch_s": 0.01858649999849149,
+              "seam_step": 0.005837592761963606,
+              "control_step": 0.0008849637815728784
+            }
+          }
+        },
+        {
+          "sample_id": "red/0098",
+          "role": "bubbles",
+          "score": 0.2649429738521576,
+          "tile_inference_s": 0.647216399998797,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0098_bubbles.npy",
+              "max": 0.30365729331970215,
+              "stitch_s": 0.01720519999980752
+            }
+          }
+        }
+      ],
+      "metrics_seconds": 2.371852399999625
+    },
+    "green": {
+      "train_ids": [
+        "green/0001",
+        "green/0003",
+        "green/0004",
+        "green/0005",
+        "green/0006",
+        "green/0007",
+        "green/0010",
+        "green/0011",
+        "green/0012",
+        "green/0013",
+        "green/0014",
+        "green/0015",
+        "green/0016",
+        "green/0017",
+        "green/0018",
+        "green/0021",
+        "green/0022",
+        "green/0023",
+        "green/0024",
+        "green/0025",
+        "green/0029",
+        "green/0030",
+        "green/0032",
+        "green/0034",
+        "green/0035",
+        "green/0037",
+        "green/0038",
+        "green/0039",
+        "green/0040",
+        "green/0043",
+        "green/0044",
+        "green/0048",
+        "green/0049",
+        "green/0052",
+        "green/0053",
+        "green/0054",
+        "green/0055",
+        "green/0056",
+        "green/0057",
+        "green/0058",
+        "green/0059",
+        "green/0060",
+        "green/0062",
+        "green/0063",
+        "green/0064",
+        "green/0066",
+        "green/0067",
+        "green/0070",
+        "green/0072",
+        "green/0073",
+        "green/0074",
+        "green/0076",
+        "green/0077",
+        "green/0078",
+        "green/0079",
+        "green/0080",
+        "green/0081",
+        "green/0082",
+        "green/0083",
+        "green/0084",
+        "green/0085",
+        "green/0086",
+        "green/0088",
+        "green/0089",
+        "green/0091",
+        "green/0092",
+        "green/0093",
+        "green/0094",
+        "green/0096",
+        "green/0100"
+      ],
+      "validation_ids": [
+        "green/0008",
+        "green/0019",
+        "green/0026",
+        "green/0027",
+        "green/0028",
+        "green/0041",
+        "green/0042",
+        "green/0045",
+        "green/0046",
+        "green/0061",
+        "green/0068",
+        "green/0069",
+        "green/0071",
+        "green/0075",
+        "green/0098"
+      ],
+      "validation_normal_count": 15,
+      "candidate_rows": 224000,
+      "checkpoint": {
+        "path": "green/fitted_state.pt",
+        "sha256": "86107b41e4bc51fca106218db9f257c0177cdfd6fdc1fd00c8c536a34f61d51c",
+        "dimensions": [
+          22400,
+          384
+        ],
+        "bank_mib": 32.8125
+      },
+      "measurements": {
+        "green_load_encoder": {
+          "seconds": 0.216,
+          "rss_peak_mib_sampled": 1679.1,
+          "cuda_peak_allocated_mib": 126.3,
+          "cuda_peak_reserved_mib": 440.0
+        },
+        "green_candidate_extraction": {
+          "seconds": 43.988,
+          "rss_peak_mib_sampled": 1993.1,
+          "cuda_peak_allocated_mib": 126.1,
+          "cuda_peak_reserved_mib": 440.0
+        },
+        "green_coreset": {
+          "seconds": 83.9,
+          "rss_peak_mib_sampled": 1969.3,
+          "cuda_peak_allocated_mib": 954.5,
+          "cuda_peak_reserved_mib": 1044.0
+        },
+        "green_validation_inference": {
+          "seconds": 22.602,
+          "rss_peak_mib_sampled": 1638.8,
+          "cuda_peak_allocated_mib": 157.5,
+          "cuda_peak_reserved_mib": 442.0
+        }
+      },
+      "metric_score_max": 0.3923170566558838,
+      "metrics": {
+        "pixel_auroc": 0.8316861749901769,
+        "pixel_ap": 0.16563502931674967,
+        "aupro": 0.6866876677556915,
+        "positive_pixels": 482793,
+        "negative_pixels": 125346327,
+        "size_specific": {
+          "small_lt64": {
+            "components": 88,
+            "aupro": 0.6865206770420966,
+            "mean_overlap_at_1pct_fpr": 0.5262812910526434
+          },
+          "medium_64_to_511": {
+            "components": 49,
+            "aupro": 0.7911689228568882,
+            "mean_overlap_at_1pct_fpr": 0.6531865159698416
+          },
+          "large_ge512": {
+            "components": 86,
+            "aupro": 0.6273285245328915,
+            "mean_overlap_at_1pct_fpr": 0.3441940312423824
+          }
+        },
+        "half_bin_resolution_abs_difference": {
+          "pixel_auroc": 2.2141047884005616e-09,
+          "pixel_ap": 8.407719403413783e-06,
+          "aupro": 1.2325895939468978e-06
+        },
+        "mean_inference_s": 0.668956073333599,
+        "image_auroc": 0.8666666666666667,
+        "image_ap": 0.8873406947319991,
+        "normal_seam": {
+          "step": 0.00534060625359416,
+          "control_step": 0.0008442073323143025,
+          "ratio": 6.326178474372485
+        }
+      },
+      "predictions": [
+        {
+          "sample_id": "green/0008",
+          "role": "normal",
+          "score": 0.25117620825767517,
+          "tile_inference_s": 0.6378662000006443,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0008_normal.npy",
+              "max": 0.3045559227466583,
+              "stitch_s": 0.015449399999852176,
+              "seam_step": 0.005346388556063175,
+              "control_step": 0.0008476364891976118
+            }
+          }
+        },
+        {
+          "sample_id": "green/0008",
+          "role": "bubbles",
+          "score": 0.2499726414680481,
+          "tile_inference_s": 0.6411941999995179,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0008_bubbles.npy",
+              "max": 0.31455397605895996,
+              "stitch_s": 0.015945500001180335
+            }
+          }
+        },
+        {
+          "sample_id": "green/0019",
+          "role": "normal",
+          "score": 0.2246367484331131,
+          "tile_inference_s": 0.6422404999993887,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0019_normal.npy",
+              "max": 0.2502651512622833,
+              "stitch_s": 0.015499899998758337,
+              "seam_step": 0.005352315027266741,
+              "control_step": 0.0008578177075833082
+            }
+          }
+        },
+        {
+          "sample_id": "green/0019",
+          "role": "bubbles",
+          "score": 0.22475047409534454,
+          "tile_inference_s": 0.6537695999995776,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0019_bubbles.npy",
+              "max": 0.2529729902744293,
+              "stitch_s": 0.014305900000181282
+            }
+          }
+        },
+        {
+          "sample_id": "green/0026",
+          "role": "normal",
+          "score": 0.2766977548599243,
+          "tile_inference_s": 0.6504881000000751,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0026_normal.npy",
+              "max": 0.3923170566558838,
+              "stitch_s": 0.017292800001087016,
+              "seam_step": 0.0056223878636956215,
+              "control_step": 0.0009123218478634953
+            }
+          }
+        },
+        {
+          "sample_id": "green/0026",
+          "role": "bubbles",
+          "score": 0.3156962990760803,
+          "tile_inference_s": 0.6453963000003569,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0026_bubbles.npy",
+              "max": 0.39228153228759766,
+              "stitch_s": 0.015365499999461463
+            }
+          }
+        },
+        {
+          "sample_id": "green/0027",
+          "role": "normal",
+          "score": 0.2362218201160431,
+          "tile_inference_s": 0.6469095000011293,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0027_normal.npy",
+              "max": 0.2533043920993805,
+              "stitch_s": 0.021987799998896662,
+              "seam_step": 0.005427916534245014,
+              "control_step": 0.0008529685437679291
+            }
+          }
+        },
+        {
+          "sample_id": "green/0027",
+          "role": "bubbles",
+          "score": 0.35041385889053345,
+          "tile_inference_s": 0.6465353000003233,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0027_bubbles.npy",
+              "max": 0.36466410756111145,
+              "stitch_s": 0.01814360000025772
+            }
+          }
+        },
+        {
+          "sample_id": "green/0028",
+          "role": "normal",
+          "score": 0.2251863181591034,
+          "tile_inference_s": 0.6542280999983632,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0028_normal.npy",
+              "max": 0.24348923563957214,
+              "stitch_s": 0.01684899999963818,
+              "seam_step": 0.005207918584346771,
+              "control_step": 0.0008283279603347182
+            }
+          }
+        },
+        {
+          "sample_id": "green/0028",
+          "role": "bubbles",
+          "score": 0.2343817800283432,
+          "tile_inference_s": 0.6547119000006205,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0028_bubbles.npy",
+              "max": 0.28153523802757263,
+              "stitch_s": 0.017213900000569993
+            }
+          }
+        },
+        {
+          "sample_id": "green/0041",
+          "role": "normal",
+          "score": 0.19644027948379517,
+          "tile_inference_s": 0.6489925999994739,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0041_normal.npy",
+              "max": 0.2507763206958771,
+              "stitch_s": 0.019163599999956205,
+              "seam_step": 0.004861567169427872,
+              "control_step": 0.0008078201208263636
+            }
+          }
+        },
+        {
+          "sample_id": "green/0041",
+          "role": "bubbles",
+          "score": 0.27471718192100525,
+          "tile_inference_s": 0.6515873000007559,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0041_bubbles.npy",
+              "max": 0.37431153655052185,
+              "stitch_s": 0.017145399999208166
+            }
+          }
+        },
+        {
+          "sample_id": "green/0042",
+          "role": "normal",
+          "score": 0.23978358507156372,
+          "tile_inference_s": 0.6509758000011061,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0042_normal.npy",
+              "max": 0.31298771500587463,
+              "stitch_s": 0.015857800000958377,
+              "seam_step": 0.00489538349211216,
+              "control_step": 0.0007646962767466903
+            }
+          }
+        },
+        {
+          "sample_id": "green/0042",
+          "role": "bubbles",
+          "score": 0.347429096698761,
+          "tile_inference_s": 0.6510913999991317,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0042_bubbles.npy",
+              "max": 0.3611775040626526,
+              "stitch_s": 0.01798150000104215
+            }
+          }
+        },
+        {
+          "sample_id": "green/0045",
+          "role": "normal",
+          "score": 0.2220558077096939,
+          "tile_inference_s": 0.6551112999986799,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0045_normal.npy",
+              "max": 0.27906471490859985,
+              "stitch_s": 0.01928600000064762,
+              "seam_step": 0.004934915341436863,
+              "control_step": 0.0007887333631515503
+            }
+          }
+        },
+        {
+          "sample_id": "green/0045",
+          "role": "bubbles",
+          "score": 0.2560342848300934,
+          "tile_inference_s": 0.6476677999999083,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0045_bubbles.npy",
+              "max": 0.3152206838130951,
+              "stitch_s": 0.01569960000051651
+            }
+          }
+        },
+        {
+          "sample_id": "green/0046",
+          "role": "normal",
+          "score": 0.27165842056274414,
+          "tile_inference_s": 0.6514864000000671,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0046_normal.npy",
+              "max": 0.2792436480522156,
+              "stitch_s": 0.015991800000847434,
+              "seam_step": 0.005319356918334961,
+              "control_step": 0.000820021377876401
+            }
+          }
+        },
+        {
+          "sample_id": "green/0046",
+          "role": "bubbles",
+          "score": 0.3189767003059387,
+          "tile_inference_s": 0.6532970999996905,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0046_bubbles.npy",
+              "max": 0.33528488874435425,
+              "stitch_s": 0.01793550000002142
+            }
+          }
+        },
+        {
+          "sample_id": "green/0061",
+          "role": "normal",
+          "score": 0.21188880503177643,
+          "tile_inference_s": 0.6530436000011832,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0061_normal.npy",
+              "max": 0.28074148297309875,
+              "stitch_s": 0.019254700000601588,
+              "seam_step": 0.005011519882827997,
+              "control_step": 0.0008038367377594113
+            }
+          }
+        },
+        {
+          "sample_id": "green/0061",
+          "role": "bubbles",
+          "score": 0.32367974519729614,
+          "tile_inference_s": 0.6562283000002935,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0061_bubbles.npy",
+              "max": 0.39008259773254395,
+              "stitch_s": 0.018551999999544933
+            }
+          }
+        },
+        {
+          "sample_id": "green/0068",
+          "role": "normal",
+          "score": 0.19617104530334473,
+          "tile_inference_s": 0.6510342999990826,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0068_normal.npy",
+              "max": 0.2536909580230713,
+              "stitch_s": 0.019141500000841916,
+              "seam_step": 0.0056782979518175125,
+              "control_step": 0.0009058141731657088
+            }
+          }
+        },
+        {
+          "sample_id": "green/0068",
+          "role": "bubbles",
+          "score": 0.2667214870452881,
+          "tile_inference_s": 0.649089600001389,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0068_bubbles.npy",
+              "max": 0.2634560465812683,
+              "stitch_s": 0.018960299999889685
+            }
+          }
+        },
+        {
+          "sample_id": "green/0069",
+          "role": "normal",
+          "score": 0.24231766164302826,
+          "tile_inference_s": 0.6493332000009104,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0069_normal.npy",
+              "max": 0.24769027531147003,
+              "stitch_s": 0.015872300000410178,
+              "seam_step": 0.005656079389154911,
+              "control_step": 0.0008351959986612201
+            }
+          }
+        },
+        {
+          "sample_id": "green/0069",
+          "role": "bubbles",
+          "score": 0.24226343631744385,
+          "tile_inference_s": 0.6535377000000153,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0069_bubbles.npy",
+              "max": 0.2941858768463135,
+              "stitch_s": 0.019434300000284566
+            }
+          }
+        },
+        {
+          "sample_id": "green/0071",
+          "role": "normal",
+          "score": 0.1879570335149765,
+          "tile_inference_s": 0.6597733999988122,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0071_normal.npy",
+              "max": 0.2600708603858948,
+              "stitch_s": 0.019518600000083097,
+              "seam_step": 0.0054372576996684074,
+              "control_step": 0.0008312237914651632
+            }
+          }
+        },
+        {
+          "sample_id": "green/0071",
+          "role": "bubbles",
+          "score": 0.3080691397190094,
+          "tile_inference_s": 0.6596609000007447,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0071_bubbles.npy",
+              "max": 0.38046783208847046,
+              "stitch_s": 0.018781000000672066
+            }
+          }
+        },
+        {
+          "sample_id": "green/0075",
+          "role": "normal",
+          "score": 0.2064719796180725,
+          "tile_inference_s": 0.6534608000001754,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0075_normal.npy",
+              "max": 0.2850686013698578,
+              "stitch_s": 0.019530600000507548,
+              "seam_step": 0.005657911766320467,
+              "control_step": 0.000912266899831593
+            }
+          }
+        },
+        {
+          "sample_id": "green/0075",
+          "role": "bubbles",
+          "score": 0.2796429693698883,
+          "tile_inference_s": 0.6512147000012192,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0075_bubbles.npy",
+              "max": 0.3596512973308563,
+              "stitch_s": 0.01901919999909296
+            }
+          }
+        },
+        {
+          "sample_id": "green/0098",
+          "role": "normal",
+          "score": 0.2570743262767792,
+          "tile_inference_s": 0.6552172000010614,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0098_normal.npy",
+              "max": 0.2723763585090637,
+              "stitch_s": 0.022446099999797298,
+              "seam_step": 0.005699877627193928,
+              "control_step": 0.0008944286964833736
+            }
+          }
+        },
+        {
+          "sample_id": "green/0098",
+          "role": "bubbles",
+          "score": 0.2771148681640625,
+          "tile_inference_s": 0.6568561999993108,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0098_bubbles.npy",
+              "max": 0.308803528547287,
+              "stitch_s": 0.019057800000155112
+            }
+          }
+        }
+      ],
+      "metrics_seconds": 1.9782916999993176
+    },
+    "regular": {
+      "train_ids": [
+        "regular/0001"
+      ],
+      "validation_ids": [
+        "regular/0004",
+        "regular/0074",
+        "regular/0097"
+      ],
+      "validation_normal_count": 0,
+      "candidate_rows": 3200,
+      "checkpoint": {
+        "path": "regular/fitted_state.pt",
+        "sha256": "f50ae65e512f98fe3039c5cf675c0d15d831c4485fd48ea687541b6fb9270006",
+        "dimensions": [
+          320,
+          384
+        ],
+        "bank_mib": 0.46875
+      },
+      "measurements": {
+        "regular_load_encoder": {
+          "seconds": 0.415,
+          "rss_peak_mib_sampled": 1658.9,
+          "cuda_peak_allocated_mib": 126.3,
+          "cuda_peak_reserved_mib": 440.0
+        },
+        "regular_candidate_extraction": {
+          "seconds": 0.893,
+          "rss_peak_mib_sampled": 1602.5,
+          "cuda_peak_allocated_mib": 126.1,
+          "cuda_peak_reserved_mib": 440.0
+        },
+        "regular_coreset": {
+          "seconds": 0.081,
+          "rss_peak_mib_sampled": 1558.1,
+          "cuda_peak_allocated_mib": 103.7,
+          "cuda_peak_reserved_mib": 442.0
+        },
+        "regular_validation_inference": {
+          "seconds": 2.022,
+          "rss_peak_mib_sampled": 1633.2,
+          "cuda_peak_allocated_mib": 125.1,
+          "cuda_peak_reserved_mib": 152.0
+        }
+      },
+      "metric_score_max": 0.543095588684082,
+      "metrics": {
+        "pixel_auroc": 0.7437131135773053,
+        "pixel_ap": 0.08241227409940359,
+        "aupro": 0.5384633719372478,
+        "positive_pixels": 106761,
+        "negative_pixels": 12476151,
+        "size_specific": {
+          "small_lt64": {
+            "components": 14,
+            "aupro": 0.7060460069502991,
+            "mean_overlap_at_1pct_fpr": 0.15678824721377893
+          },
+          "medium_64_to_511": {
+            "components": 15,
+            "aupro": 0.6137461917883912,
+            "mean_overlap_at_1pct_fpr": 0.2001110658775857
+          },
+          "large_ge512": {
+            "components": 21,
+            "aupro": 0.37296817251106434,
+            "mean_overlap_at_1pct_fpr": 0.12720309829447954
+          }
+        },
+        "half_bin_resolution_abs_difference": {
+          "pixel_auroc": 1.2650469671804387e-08,
+          "pixel_ap": 3.7880013697977333e-06,
+          "aupro": 1.5156017607598216e-07
+        },
+        "mean_inference_s": 0.5850441333338191,
+        "image_auroc": null,
+        "image_ap": null,
+        "normal_seam": null
+      },
+      "predictions": [
+        {
+          "sample_id": "regular/0004",
+          "role": "bubbles",
+          "score": 0.42737600207328796,
+          "tile_inference_s": 0.5680422999994335,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0004_bubbles.npy",
+              "max": 0.43718811869621277,
+              "stitch_s": 0.01659490000020014
+            }
+          }
+        },
+        {
+          "sample_id": "regular/0074",
+          "role": "bubbles",
+          "score": 0.42785748839378357,
+          "tile_inference_s": 0.5642979000003834,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0074_bubbles.npy",
+              "max": 0.44688254594802856,
+              "stitch_s": 0.019694000000527012
+            }
+          }
+        },
+        {
+          "sample_id": "regular/0097",
+          "role": "bubbles",
+          "score": 0.5226903557777405,
+          "tile_inference_s": 0.5682321000003867,
+          "maps": {
+            "gaussian": {
+              "path": "raw/128_gaussian_0097_bubbles.npy",
+              "max": 0.543095588684082,
+              "stitch_s": 0.018271200000526733
+            }
+          }
+        }
+      ],
+      "metrics_seconds": 0.28713059999972756
+    }
+  }
+}

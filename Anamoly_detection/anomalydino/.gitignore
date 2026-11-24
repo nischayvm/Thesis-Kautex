@@ -1,0 +1,7 @@
+/.python/
+/.venv/
+/.uv-cache/
+/.hf-cache/
+/.mpl-cache/
+/__pycache__/
+/runs/
