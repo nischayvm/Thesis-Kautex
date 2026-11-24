@@ -6,3 +6,8 @@
 /runs/*/*
 !/runs/*/report.json
 !/runs/regular_smoke_20261124T072401_611224Z/fitted_state.pt
+!/runs/red_phase3_20261124T075750_651308Z/memory_bank_64.pt
+!/runs/red_phase3_20261124T075750_651308Z/memory_bank_128.pt
+!/runs/red_phase3_20261124T075750_651308Z/comparison.png
+!/runs/red_phase3_20261124T075750_651308Z/raw_score_maps.zip
+!/runs/red_phase3_20261124T075750_651308Z/validation_figures.zip

@@ -119,3 +119,59 @@ Estimates are **per color**, based on the measured feature shape. Seventy unique
 ¹ The stock implementation retains per-batch tensors while forming the contiguous candidate tensor. K-center then creates the projected matrix and uses additional scratch space. These are tensor storage estimates without Python, model, allocator, or OS overhead. The stock fit exceeds both the host RAM and GPU VRAM budgets. Keeping only a final 10% bank would still consume 4.10 GiB of VRAM per color and incur a large search cost even with distance chunking. [Anomalib 2.2 coreset implementation](https://github.com/open-edge-platform/anomalib/blob/v2.2.0/src/anomalib/models/components/sampling/k_center_greedy.py) · [PatchCore storage and search code](https://github.com/open-edge-platform/anomalib/blob/v2.2.0/src/anomalib/models/image/patchcore/torch_model.py)
 
 **Recommended next feasibility step.** Process one color at a time and stream a seeded spatially stratified sample of **64 candidates per tile** to host memory. Draw one feature vector per cell of an 8 × 8 grid on the feature map so every tile and every planned normal training view contributes. For 70 images, this bounds the input to 112,000 rows and **656.25 MiB** of original embeddings. A projected greedy k-center pass retaining 10% of those candidates would yield 11,200 rows and **65.63 MiB** of final FP32 bank storage. Keep bounded exact search. Apply the same policy and seed to both colors, and use validation to check localization on small components, seam behavior and the benefit of a larger candidate budget before finalizing the sampling method. These are projected resource bounds for the proposed candidate policy. Phase 2 ran only the single-reference smoke fit and left the original dataset and full-scale experiment untouched.
+
+## 2026-11-24 · Phase 3 grouped split and red-lighting optimization
+
+### Split and experiment design
+
+The frozen split uses seed 24117 and assigns 70 training, 15 validation and 15 test setup IDs to each of red and green. The two colors use the exact same assignment. Each validation and test fold has five setups per height band, including one partial dark-field setup in each band. Normal images, defective images and masks stay together within each colored setup. The previously identified near-duplicate pair `0091` and `0094` stays together in training. The script rebuilds the same assignments from the audited manifest and checks decoded-pixel hashes for leakage across colored folds. [Split manifest](patchcore/split_v1.json) · [Split generator](patchcore/split_dataset.py)
+
+The regular cohort keeps `regular/normal/0001.png` as the one fixed normal reference and excludes the other 99 clean copies. The three inspected defects `regular/0004`, `regular/0074` and `regular/0097` are development/validation images. The other 97 regular defective images are reserved for test. Phase 3 evaluated red validation only. The red, green and regular final test images remained untouched. The green and regular assignments are recorded for future runs.
+
+The two banks used only the same 70 verified red normal images. The pretrained WideResNet50-2, `layer2` and `layer3`, batch size 1, native 512 × 512 tiles, 128 px overlap, FP32, and 10% projected greedy k-center coreset were held fixed. On each 64 × 64 feature grid, an 8 × 8 array of spatial strata supplied one seeded vector per stratum for the 64-candidate pool. The 128-candidate pool added a second distinct vector in each stratum and contained every candidate from the smaller pool. For each bank, both stitchers used the same tile predictions. Uniform averaging gives every overlapping tile the same weight. Gaussian stitching uses separable center weights with sigma 128 px per axis and divides by the local sum of weights. No calibration threshold was fitted.
+
+Pixel AUROC and AP pool full-frame pixels across 15 clean and 15 defective red validation images. AUPRO integrates equally weighted 8-connected component overlap up to a pooled background-pixel FPR of 30% and divides by 0.30. Size bands use component area below 64, 64–511 and at least 512 px². The size-specific curves use the same background FPR and also report mean component overlap at a diagnostic 1% FPR. Metrics use 65,536 shared score bins over the full continuous score range, with a half-resolution sensitivity check. The seam diagnostic compares the mean absolute adjacent-pixel score step at internal tile boundaries against parallel controls 16 px away, on the 15 clean validation images. [AUPRO convention](https://www.mvtec.com/fileadmin/Redaktion/mvtec.com/05_research_teaching/Batzner_EfficientAD_Accurate_Visual_Anomaly_Detection_at_Millisecond_Level_Latencies_WACV_2024_paper.pdf)
+
+Run from `Anamoly_detection/patchcore` using the existing Phase 2 environment.
+
+```powershell
+.\.venv\Scripts\python.exe split_dataset.py
+.\.venv\Scripts\python.exe -u phase3.py
+```
+
+### Red validation results
+
+| Candidates per tile | Stitching | Pixel AUROC | Pixel AP | AUPRO at 30% FPR | Mean seam step |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 64 | Uniform | 0.8638 | 0.1719 | 0.6148 | 0.8460 |
+| 64 | Gaussian | 0.8609 | 0.1763 | 0.6041 | 0.3207 |
+| 128 | Uniform | 0.9469 | 0.2874 | 0.8141 | 0.7672 |
+| **128** | **Gaussian** | **0.9486** | **0.2960** | **0.8177** | **0.2942** |
+
+There were 457,885 positive and 125,371,235 background pixels. Halving the histogram resolution changed the reported pixel metrics by at most 0.000020. Image AUROC/AP from the maximum weighted tile score were 0.8311/0.8554 with 64 candidates and 0.9200/0.9314 with 128. This image score is shared by both stitchers.
+
+| Candidates and stitch | Small AUPRO / overlap¹ (78) | Medium AUPRO / overlap¹ (58) | Large AUPRO / overlap¹ (86) |
+| --- | ---: | ---: | ---: |
+| 64 uniform | 0.472 / 0.180 | 0.800 / 0.647 | 0.619 / 0.326 |
+| 64 Gaussian | 0.454 / 0.176 | 0.798 / 0.645 | 0.609 / 0.328 |
+| 128 uniform | 0.731 / 0.341 | 0.889 / 0.751 | 0.839 / 0.514 |
+| 128 Gaussian | 0.733 / 0.326 | 0.894 / 0.754 | 0.843 / 0.519 |
+
+¹ Mean component overlap at 1% pooled background FPR. The counts in parentheses refer to visible mask components. The 128-candidate Gaussian setup led on aggregate and size-specific AUPRO. Uniform stitching with 128 candidates retained a 1.5 percentage-point advantage in small-component overlap at the 1% diagnostic FPR. Small components remained the hardest group for either stitcher.
+
+At 128 candidates, Gaussian weighting lowered the mean seam step by 61.7%. Relative to the nearby control step, the seam dropped from 10.46× to 4.17×. The comparison shows softer rectangular boundaries and persistent responses on tray ribs and background structures. The full-resolution heatmaps share one visual scale from 0 to 27.2401. Metrics use the raw stitched scores. Extract the archives into the run directory to recover its `visuals/` and `raw/` outputs. [Visual comparison](patchcore/runs/red_phase3_20261124T075750_651308Z/comparison.png) · [Validation figures ZIP](patchcore/runs/red_phase3_20261124T075750_651308Z/validation_figures.zip) · [Raw score maps ZIP](patchcore/runs/red_phase3_20261124T075750_651308Z/raw_score_maps.zip) · [Run report](patchcore/runs/red_phase3_20261124T075750_651308Z/report.json)
+
+### Measured resources
+
+Shared extraction from the 70 red training normals took 34.12 s. The peak sampled process RAM was 3,038 MiB, and the PyTorch allocator peaked at 345 MiB allocated and 398 MiB reserved. Both candidate budgets were extracted in this one pass.
+
+| Candidates per tile | Candidate vectors | Fitted bank | Coreset time | Fit RAM peak | Fit VRAM allocated / reserved | Mean inference and stitch | Inference RAM peak |
+| ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 64 | 112,000 | 11,200 × 1,536 · 65.63 MiB | 20.13 s | 3,149 MiB | 2,070 / 2,112 MiB | 1.18 s/frame | 3,532 MiB |
+| 128 | 224,000 | 22,400 × 1,536 · 131.25 MiB | 83.35 s | 3,360 MiB | 3,883 / 3,918 MiB | 1.89 s/frame | 3,592 MiB |
+
+Shared extraction plus coreset took 54.25 s for the 64-candidate budget and 117.47 s for 128. Per-frame inference includes tile inference and one stitch and excludes PNG decoding, map writes, and metric calculations. The 128 inference stage peaked at 510 MiB allocated and 632 MiB reserved. The first run completed fitting and inference but stopped at a type error during overlay export. The visualization fix passed an end-to-end synthetic check, then the full comparison completed in a new directory. Both saved banks and spot-checked 64-candidate raw maps matched the first attempt byte for byte.
+
+### Configuration selected on red validation
+
+Use **128 spatially stratified candidates per tile, a 10% coreset, and Gaussian stitching with sigma 128 px per axis**. The larger bank improved localization across size bands and fitted within the RTX 4060 memory budget. Gaussian stitching improved all three pooled pixel metrics at that budget and substantially reduced the measured seam step. Check the selected configuration on the matched green validation fold before drawing cross-lighting conclusions. The red result is based on 15 synthetic validation setups using one seed. Final test evaluation remains reserved.
