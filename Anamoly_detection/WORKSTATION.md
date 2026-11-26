@@ -1,6 +1,6 @@
 # Windows workstation launcher
 
-Double-click [ANNAlyzer_Master.bat](../ANNAlyzer_Master.bat) in the repository root. The menu runs on an existing Python 3.10 or newer, including Python 3.14. The environment setup uses the existing model lockfiles with **isolated Python 3.12.13 and the pinned CUDA 12.8 PyTorch builds**. The report and UI environments use separate requirements files. Setup uses an existing `uv` or installs it into a repository-local bootstrap environment. [uv setup](https://docs.astral.sh/uv/getting-started/installation/) · [Managed Python](https://docs.astral.sh/uv/guides/install-python/) · [Pinned report requirements](../scripts/workstation-requirements.txt)
+Double-click [ANNAlyzer_Master.bat](../ANNAlyzer_Master.bat) in the repository root to open the PyQt6 workstation window. If PyQt6 is missing, the bootstrap terminal prompts to install the isolated UI environment first. The launcher starts on Python 3.10 or newer, including Python 3.14. Model setup uses the existing lockfiles with **isolated Python 3.12.13 and the pinned CUDA 12.8 PyTorch builds**. The report and UI environments use separate requirements files. [Pinned report requirements](../scripts/workstation-requirements.txt) · [Pinned UI requirements](inspection_app/requirements.txt)
 
 ## First run
 
@@ -14,10 +14,12 @@ Set-Location Thesis-Kautex
 .\ANNAlyzer_Master.bat
 ```
 
-1. Choose **Edit job settings**. The menu lists every editable setting and its current value. The default job file is `.workstation/jobs/default.json`. To save multiple presets, use **Open or create a different job file**. Paths can be absolute or relative to the repository root.
-2. Choose **Install requirements and create isolated Python environments**. This installs the selected model environments and the reporting and inspection environments under `.workstation/envs/`. A first install needs access to the package repositories and Python downloads. Keep the model environment on the machine where you install it.
+1. Use the **Settings** dropdown to edit paths, rendering, split, training, and model options. Click **Save** to write the default job file at `.workstation/jobs/default.json`. Use **Save as…** for another preset and **Open…** to load it. Paths can be absolute or relative to the repository root.
+2. Select **Install requirements** from the **Action** dropdown. Tick the model and reporting environments you need, then click **Run**. This installs the selected components under `.workstation/envs/`. A first install needs access to the package repositories and Python downloads.
 3. Choose **Download or verify pretrained weights**. Downloads use the checkpoint URLs and SHA-256 hashes from the existing implementations. If the workstation is offline or uses an internal mirror, place the pinned files in the paths listed in the model setup docs.
-4. Choose **Check workstation GPU and model environments**. Check the actual GPU name, available memory, driver and CUDA operation before scheduling long jobs. The reports record the actual device used. The launcher runs selected GPU jobs one at a time.
+4. Choose **Check GPU and environments**. Check the actual GPU name, available memory, driver and CUDA operation before scheduling long jobs. The reports record the actual device used. The launcher runs selected GPU jobs one at a time.
+
+The **Job terminal** streams setup, Blender, model and reporting output in the window. Its status line shows completion, failure or cancellation. Use **Send** to answer prompts such as the publishing selection. Each run's terminal output is also saved under `.workstation/logs/`. Use **Stop job** to stop the active job and its child processes.
 
 ## Choosing settings
 
@@ -31,7 +33,7 @@ Set-Location Thesis-Kautex
 | U-Net | Epochs, batch size, learning rate and FP16/BF16/FP32. Custom regular jobs train on pairs from regular lighting. The original V3 benchmark keeps red-to-regular transfer. |
 | Flownomaly | Encoder epochs and learning rate, flow epochs and learning rate, flow batch size, and tokens per tile. Flow fitting, checkpoint selection and calibration use separate subsets of the training normals. |
 
-Lists use JSON syntax such as `["red", "green"]`. Text fields accept Windows paths with spaces. Edit the job file directly or use the menu; both routes use the same validation.
+Lighting and model lists use checkboxes. Text fields accept Windows paths with spaces. Direct JSON edits use the same validation and use list syntax such as `["red", "green"]`.
 
 ## Running and finding results
 
@@ -44,6 +46,7 @@ Use **Original V3/V4 benchmark** to run the existing benchmark against its origi
 ### PowerShell examples
 
 ```powershell
+.\ANNAlyzer_Master.bat menu
 .\ANNAlyzer_Master.bat setup --components unet reporting
 .\ANNAlyzer_Master.bat new --config .workstation/jobs/workstation.json
 .\ANNAlyzer_Master.bat render --config .workstation/jobs/workstation.json

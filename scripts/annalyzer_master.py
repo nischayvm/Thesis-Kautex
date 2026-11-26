@@ -62,6 +62,37 @@ def env_python(name):
     return env
 
 
+def gui_python():
+    candidates = (LOCAL / "envs/inspection/Scripts/python.exe",
+                  ANOMALY / "inspection_app/.venv/Scripts/python.exe", Path(sys.executable))
+    for candidate in candidates:
+        if not candidate.is_file():
+            continue
+        try:
+            result = subprocess.run([str(candidate), "-B", "-c", "from PyQt6 import QtWidgets"],
+                                    capture_output=True, timeout=10)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        if result.returncode == 0:
+            return candidate
+    return None
+
+
+def launch_gui(path):
+    python = gui_python()
+    if python is None:
+        if input("Install the isolated PyQt6 environment to open the workstation window? [Y/n] ").strip().lower() not in ("", "y", "yes"):
+            return
+        setup(["inspection"])
+        python = env_python("inspection")
+    log = log_file("ui_startup")
+    log.parent.mkdir(parents=True, exist_ok=True)
+    with log.open("x", encoding="utf-8") as output:
+        subprocess.Popen([str(python), "-B", str(SCRIPTS / "annalyzer_workstation_ui.py"), "--config", str(path)],
+                         cwd=ROOT, stdin=subprocess.DEVNULL, stdout=output, stderr=subprocess.STDOUT,
+                         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+
+
 def setup(components):
     uv = shutil.which("uv")
     tools = LOCAL / "bootstrap"
@@ -251,8 +282,11 @@ def dispatch(action, path, args):
         for model in models:
             model_job(model, "fit", path)
     elif action == "inspect":
+        python = gui_python()
+        if python is None:
+            raise ValueError("Install the inspection environment before opening tray inspection.")
         app_env = dict(os.environ, ANNALYZER_MODEL_ENV_ROOT=str(LOCAL / "envs"))
-        invoke(env_python("inspection"), "-B", ANOMALY / "inspection_app/app.py", env=app_env)
+        invoke(python, "-B", ANOMALY / "inspection_app/app.py", env=app_env)
     elif action in ("html","excel","journal","publish"):
         scripts = {"html": "generate_benchmark_html_report.py", "excel": "generate_benchmark_excel.py",
                    "journal": "update_journal_from_results.py", "publish": "publish_v2_results.py"}
@@ -330,7 +364,7 @@ def menu(path, args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = tuple(action for action, _ in MENU if action not in ("edit", "open"))
-    parser.add_argument("action", nargs="?", default="menu", choices=("menu", "new", "audit-local", *commands))
+    parser.add_argument("action", nargs="?", default="gui", choices=("gui", "menu", "new", "audit-local", *commands))
     parser.add_argument("--config", type=Path, default=LOCAL / "jobs/default.json")
     parser.add_argument("--components", nargs="+", choices=(*MODELS,"reporting","inspection"))
     parser.add_argument("--model", choices=MODELS)
@@ -339,7 +373,9 @@ def main():
     parser.add_argument("--kind", choices=("clean","blistered"))
     args = parser.parse_args()
     path = rooted(args.config)
-    if args.action == "menu":
+    if args.action == "gui":
+        launch_gui(path)
+    elif args.action == "menu":
         menu(path, args)
     else:
         if not path.exists() and args.action in ("setup","check","weights","html","excel","inspect","journal","publish"):
@@ -350,5 +386,5 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
+    except (OSError, ValueError, EOFError, RuntimeError, subprocess.CalledProcessError) as exc:
         sys.exit(f"Job stopped. {exc}")

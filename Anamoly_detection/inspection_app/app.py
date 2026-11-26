@@ -285,8 +285,9 @@ class Inspection(QWidget):
             return
         self.stop_worker()
         env_root = os.getenv("ANNALYZER_MODEL_ENV_ROOT")
-        model_env = Path(env_root) / key[0] if env_root else ANOMALY / key[0] / ".venv"
-        python = model_env / "Scripts" / "python.exe"
+        python = Path(env_root) / key[0] / "Scripts/python.exe" if env_root else None
+        if python is None or not python.is_file():
+            python = ANOMALY / key[0] / ".venv/Scripts/python.exe"
         if not python.is_file():
             self.fail(f"Model environment not found at {python}")
             return
