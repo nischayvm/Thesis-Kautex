@@ -21,6 +21,8 @@ Set-Location Thesis-Kautex
 
 The **Job terminal** streams setup, Blender, model and reporting output in the window. Its status line shows completion, failure or cancellation. Use **Send** to answer prompts such as the publishing selection. Each run's terminal output is also saved under `.workstation/logs/`. Use **Stop job** to stop the active job and its child processes.
 
+Choose **Render a custom dataset** in the **Action** dropdown to open **Dataset creation** automatically. The page includes the output folder, lighting, pairs per light, resolution, seed, Cycles samples, GPU selector, and camera and LED heights. **Run** uses the selected values.
+
 ## Choosing settings
 
 | Settings | Editable values |

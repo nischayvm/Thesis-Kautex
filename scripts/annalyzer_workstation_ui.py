@@ -21,7 +21,7 @@ from workstation_config import DEFAULT, LIGHTS, LOCAL, MODELS, ROOT, read_json, 
 
 
 MODEL_NAMES = dict(zip(MODELS, ("PatchCore", "AnomalyDINO", "U-Net", "Flownomaly"), strict=True))
-TABS = {"paths": "Paths", "render": "Render", "split": "Split", "training": "Training",
+TABS = {"paths": "Paths", "render": "Dataset creation", "split": "Split", "training": "Training",
         **MODEL_NAMES}
 LABELS = {
     "dataset": "Dataset folder", "scene": "Blender scene", "blender": "Blender executable",
@@ -134,8 +134,9 @@ def field_for(key, default):
 class JobSettings(QWidget):
     def __init__(self):
         super().__init__()
-        sections = {"paths": {key: value for key, value in DEFAULT.items() if not isinstance(value, dict)}}
+        sections = {"paths": {key: DEFAULT[key] for key in ("blender", "scene")}}
         sections.update((key, value) for key, value in DEFAULT.items() if isinstance(value, dict))
+        sections["render"] = {"dataset": DEFAULT["dataset"], **DEFAULT["render"]}
         self.fields = {}
         self.sections = combo(sections, TABS)
         self.pages = QStackedWidget()
@@ -155,7 +156,8 @@ class JobSettings(QWidget):
                 label = LABELS.get(key, key.replace("_", " ").capitalize())
                 field = field_for(key, default)
                 form.addRow(label, field)
-                self.fields[section, key] = (field, default, label)
+                parent = "paths" if key == "dataset" else section
+                self.fields[parent, key] = (field, default, label)
             if section == "split":
                 form.addRow(QLabel("The remaining percentage is reserved for held-out test."))
             scroll = QScrollArea()
@@ -316,6 +318,10 @@ class Workstation(QWidget):
         index = {"setup": 1, "demo": 2, "validate": 3, "test": 3}.get(action, 0)
         self.arguments.setCurrentIndex(index)
         self.arguments.setVisible(index != 0)
+        section = {"render": "render", "resume": "render", "demo": "render",
+                   "audit": "split", "fit": "training"}.get(action)
+        if section is not None:
+            self.settings.sections.setCurrentIndex(self.settings.sections.findData(section))
 
     def set_busy(self, busy):
         for widget in (self.file_actions, self.settings, self.action, self.arguments, self.start_button):
