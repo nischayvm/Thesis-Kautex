@@ -12,6 +12,8 @@ This thesis project uses **ANNAlyzer**, a Blender simulation of an industrial in
 | [AnomalyDINO setup](Anamoly_detection/anomalydino/V1/README.md) | Isolated environment, frozen DINOv2 encoder and validation runner |
 | [U-Net setup](Anamoly_detection/unet/V1/README.md) | Supervised ResNet18 U-Net training and red-to-regular transfer evaluation |
 | [Research journal](Anamoly_detection/JOURNAL.md) | Dataset audit, experiment decisions and measured results |
+| [Model performance guide](Anamoly_detection/MODEL_PERFORMANCE.md) | How the four models work and what the validation reports show |
+| [Tray inspection app](Anamoly_detection/inspection_app/README.md) | Local inference, lighting selection, linked zoom and optional mask comparison |
 | [Smoke-test report](Anamoly_detection/patchcore/results/V1/regular_smoke_20261124T072401_611224Z/report.json) | Tensor shapes, timings, memory use and raw scores |
 | [Grouped split](Anamoly_detection/patchcore/V1/split_v1.json) and [red validation report](Anamoly_detection/patchcore/results/V1/red_phase3_20261124T075750_651308Z/report.json) | Reproducible setup assignments, coreset comparison and stitching results |
 
@@ -76,3 +78,7 @@ AUPRO uses a 30% background-pixel FPR limit. PatchCore led pixel AUROC and AUPRO
 | U-Net | [Report](Anamoly_detection/unet/results/V3/all_lights_v3_20261124T195634_269837Z/red/validation/report.json) | [Report](Anamoly_detection/unet/results/V3/all_lights_v3_20261124T195634_269837Z/green/validation/report.json) | [Report](Anamoly_detection/unet/results/V3/all_lights_v3_20261124T195634_269837Z/regular/validation/report.json) |
 
 Download the HTML report and open it in a browser for interactive metric charts and same-frame heatmaps. The Excel workbook includes editable charts, per-image scores, and training and resource data. Source images, ground-truth masks, and raw score maps remain local. [V3 HTML report](Anamoly_detection/reports/V3_validation_report.html) · [V3 Excel workbook](Anamoly_detection/reports/excel/V3_results.xlsx) · [U-Net V3 training curves](Anamoly_detection/unet/results/V3/all_lights_v3_20261124T195634_269837Z/training_curves.png) · [V3 artifact bundles](Anamoly_detection/benchmark_exports)
+
+## V4 Flownomaly regular validation
+
+The first Flownomaly V4 run used regular lighting. It achieved pixel AUROC **0.6534**, pixel AP **0.0147**, and AUPRO **0.3448**. It flagged **0 of 3** defective validation frames at its saved threshold. Regular image AUROC and AP are unavailable because the clean and defective frames use different capture setups. Download the standalone HTML to see the scores and heatmaps. [V4 HTML report](Anamoly_detection/reports/V4_validation_report.html) · [V4 run report](Anamoly_detection/flownomaly/results/V4/flownomaly_v4_20261125T075129_092983Z/regular/validation/report.json)

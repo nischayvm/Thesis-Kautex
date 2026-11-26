@@ -1,4 +1,4 @@
-"""Append completed V2 result summaries to the project journal."""
+"""Append completed benchmark result summaries to the project journal."""
 
 import argparse
 import json
@@ -11,10 +11,14 @@ from statistics import mean
 
 ROOT = Path(__file__).resolve().parents[1]
 JOURNAL = ROOT / "Anamoly_detection" / "JOURNAL.md"
-MODELS = {"patchcore": "PatchCore", "anomalydino": "AnomalyDINO", "unet": "U-Net"}
+MODELS = {"patchcore": "PatchCore", "anomalydino": "AnomalyDINO", "unet": "U-Net", "flownomaly": "Flownomaly"}
+TIME_STAMP = r"\d{8}T\d{6}_\d{6}Z"
+V2_RUN = rf"regular_v2_{TIME_STAMP}"
+MODERN_RUN = rf"[a-z_]+_v[34]_{TIME_STAMP}"
 REPORT_PATH = re.compile(
-    r"Anamoly_detection/(patchcore|anomalydino|unet)/results/V2/"
-    r"(regular_v2_\d{8}T\d{6}_\d{6}Z)/(validation|test)/report\.json"
+    rf"Anamoly_detection/(?P<model>{'|'.join(MODELS)})/results/"
+    rf"(?:(?P<v2>V2)/(?P<legacy>{V2_RUN})|(?P<modern>V[34])/(?P<run>{MODERN_RUN})/(?P<light>red|green|regular))/"
+    r"(?P<stage>validation|test)/report\.json"
 )
 GITHUB = "https://github.com/nischayvm/Thesis-Kautex"
 SIZES = ("small_lt64", "medium_64_to_511", "large_ge512")
@@ -34,9 +38,12 @@ def reports(from_git, selected_paths=None):
         link = lambda path: f"{GITHUB}/blob/{revision}/{path}"
         source = f"[GitHub main snapshot]({GITHUB}/commit/{revision})"
     else:
-        paths = {file.relative_to(ROOT).as_posix()
-                 for model in MODELS
-                 for file in (JOURNAL.parent / model / "results/V2").glob("regular_v2_*/*/report.json")}
+        paths = set()
+        for model in MODELS:
+            results = JOURNAL.parent / model / "results"
+            paths.update(file.relative_to(ROOT).as_posix() for file in results.glob("V2/*/*/report.json"))
+            paths.update(file.relative_to(ROOT).as_posix() for file in results.glob("V[34]/*/*/*/report.json")
+                         if (file.parents[2] / "complete.json").is_file())
         read = lambda path: (ROOT / path).read_bytes()
         exists = lambda path: (ROOT / path).is_file()
         link = lambda path: path.removeprefix("Anamoly_detection/")
@@ -51,11 +58,13 @@ def reports(from_git, selected_paths=None):
         match = REPORT_PATH.fullmatch(path)
         if not match:
             continue
-        model, run, stage = match.groups()
+        model, stage = match.group("model", "stage")
+        run = match["run"] or match["legacy"]
+        light = match["light"] or "regular"
         try:
             result = json.loads(read(path))
-            if (result["model"], result["stage"]) != (MODELS[model], stage):
-                raise ValueError("Report model or stage differs from its path")
+            if (result["model"], result["stage"], result.get("lighting", "regular")) != (MODELS[model], stage, light):
+                raise ValueError("Report model, stage or lighting differs from its path")
             artifacts = [("Report", link(path))]
             parent = path.rsplit("/", 1)[0]
             for name, filename in (("Scores CSV", "scores.csv"), ("Score plot", "image_scores.png")):
@@ -73,15 +82,18 @@ def numeric(value, digits=4):
 
 
 def marker(path):
-    return f"<!-- v2-result-report: {path} -->"
+    prefix = "v2-result-report" if "/results/V2/" in path else "benchmark-result-report"
+    return f"<!-- {prefix}: {path} -->"
 
 
 def journal_section(source, entries, previous):
     new = [entry for entry in entries if marker(entry[0]) not in previous]
     if not new:
         return "", 0
-    lines = [f"## Saved V2 run results · {date.today().isoformat()}", "",
-             f"Imported from {source}. Pixel metrics pool the fixed-pose defective frames. "
+    versions = ", ".join(sorted({entry[0].split("/")[3] for entry in new}))
+    lines = [f"## Saved {versions} run results · {date.today().isoformat()}", "",
+             f"Imported from {source}. The regular pixel metrics pool fixed-pose defective frames. "
+             "Red and green pixel metrics pool both clean and defective frames. "
              "Size columns show AUPRO / mean component overlap at 1% background pixel FPR. "
              "AUPRO integrates up to 30% background pixel FPR. Image decisions use the saved threshold "
              "for varied normals and fixed-pose defects.", ""]
@@ -94,36 +106,37 @@ def journal_section(source, entries, previous):
             lines.extend(["The highest normal validation score sets the threshold. "
                           "The validation false-positive rate is zero by construction.", ""])
         lines.extend([
-            "| Model / UTC run ID | Pixel AUROC | Pixel AP | AUPRO | Image AUROC / AP | "
+            "| Model / lighting / UTC run ID | Pixel AUROC | Pixel AP | AUPRO | Image AUROC / AP | "
             "Small | Medium | Large |",
             "| --- | ---: | ---: | ---: | --- | --- | --- | --- |",
         ])
         for _, run, r, _ in group:
-            d = r["fixed_pose_defects"]
+            d = r["defect_cohort"] if "defect_cohort" in r else r["fixed_pose_defects"]
             size = [d["size_specific"][key] for key in SIZES]
-            cells = [f'{r["model"]} / `{run}`', numeric(d["pixel_auroc"]), numeric(d["pixel_ap"]),
+            cells = [f'{r["model"]} / {r.get("lighting", "regular").title()} / `{run}`', numeric(d["pixel_auroc"]), numeric(d["pixel_ap"]),
                      numeric(d["aupro"]), f'{numeric(r["image_auroc"])} / {numeric(r["image_ap"])}',
                      *(f'{numeric(s["aupro"])} / {numeric(s["mean_overlap_at_1pct_fpr"])}' for s in size)]
             lines.append("| " + " | ".join(cells) + " |")
         lines.extend([
             "",
-            "| Model / UTC run ID | Threshold | TN / FP | TP / FN | Sensitivity / FPR | "
+            "| Model / lighting / UTC run ID | Threshold | TN / FP | TP / FN | Sensitivity / FPR | "
             "Mean inference (s/frame) | Bank rows × features |",
             "| --- | ---: | ---: | ---: | --- | ---: | --- |",
         ])
         for _, run, r, _ in group:
-            n, d = r["varied_normal"], r["fixed_pose_defects"]
+            n, d = ((r["normal_cohort"], r["defect_cohort"]) if "normal_cohort" in r
+                    else (r["varied_normal"], r["fixed_pose_defects"]))
             fp, tp = n["false_positives"], d["true_positives"]
             bank = r.get("configuration", {}).get("bank_dimensions")
             inference = mean(row["inference_seconds"] for row in r["rows"])
-            cells = [f'{r["model"]} / `{run}`', numeric(r["threshold"], 8), f'{n["frames"] - fp} / {fp}',
+            cells = [f'{r["model"]} / {r.get("lighting", "regular").title()} / `{run}`', numeric(r["threshold"], 8), f'{n["frames"] - fp} / {fp}',
                      f'{tp} / {d["frames"] - tp}', f'{d["sensitivity"]:.1%} / {n["false_positive_rate"]:.1%}',
                      numeric(inference, 3), " × ".join(map(str, bank)) if bank else "N/A"]
             lines.append("| " + " | ".join(cells) + " |")
         lines.append("")
         for path, run, r, artifacts in group:
             refs = " · ".join(f"[{title}]({href})" for title, href in artifacts)
-            lines.append(f'- **{r["model"]} / `{run}`**. {refs} {marker(path)}')
+            lines.append(f'- **{r["model"]} / {r.get("lighting", "regular").title()} / `{run}`**. {refs} {marker(path)}')
         lines.append("")
     return "\n".join(lines), len(new)
 
@@ -146,9 +159,9 @@ def append_to_journal(source, entries):
             file.write(prefix + section.encode("utf-8").replace(b"\n", newline))
             file.flush()
     if count:
-        print(f"Appended {count} completed V2 report summaries to {JOURNAL.relative_to(ROOT)}.")
+        print(f"Appended {count} completed report summaries to {JOURNAL.relative_to(ROOT)}.")
     else:
-        print("No new completed V2 reports to import.")
+        print("No new completed reports to import.")
 
 
 def main():
@@ -160,7 +173,7 @@ def main():
     source, entries = reports(args.from_git)
     if args.dry_run:
         section, count = journal_section(source, entries, JOURNAL.read_text(encoding="utf-8"))
-        print(section if count else "No new completed V2 reports to import.")
+        print(section if count else "No new completed reports to import.")
     else:
         append_to_journal(source, entries)
 

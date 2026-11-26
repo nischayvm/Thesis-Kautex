@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ANNAlyzer · Benchmark report</title>
+  <style>
+    :root {
+      color-scheme: light; --ink:#162c33; --muted:#4f6369; --line:#ccd8d6;
+      --paper:#f3f5ef; --white:#fff; --accent:#176650; --tint:#e1eee7;
+      font: 16px/1.5 system-ui, sans-serif;
+    }
+    * { box-sizing:border-box }
+    body { margin:0; color:var(--ink); background:var(--paper) }
+    header { background:#123a34; color:white; padding:2.45rem max(1rem,calc((100vw - 1440px)/2)) 1.35rem }
+    header p { color:#cce1d6; margin:.45rem 0 1.35rem }
+    h1,h2,h3,p { margin:0 0 .8rem }
+    h1 { font-size:clamp(1.9rem,4vw,3.35rem); line-height:1.12; letter-spacing:-.055em }
+    h2 { font-size:1.55rem; letter-spacing:-.025em }
+    h3 { font-size:1.1rem; margin-bottom:.45rem }
+    nav { display:flex; flex-wrap:wrap; gap:.4rem }
+    button, select { font:inherit; cursor:pointer; border:1px solid var(--line); border-radius:5px; padding:.4rem .7rem }
+    nav button { background:transparent; border-color:#679387; color:white }
+    nav button[aria-selected=true] { background:#e4f0e9; border-color:#e4f0e9; color:#123a34; font-weight:650 }
+    a { color:#084b74; text-underline-offset:.2em }
+    :focus-visible { outline:3px solid #d17921; outline-offset:3px }
+    main { max-width:1440px; margin:auto; padding:1.25rem 1rem 3rem }
+    section { margin-bottom:1.3rem; padding:1.1rem; border:1px solid var(--line); background:white; border-radius:8px }
+    .sub, .empty, small { color:var(--muted) }
+    .small { font-size:.87rem }
+    .controls { display:flex; flex-wrap:wrap; align-items:end; gap:.75rem; margin-bottom:1rem }
+    label { display:grid; gap:.2rem; font-size:.86rem; font-weight:650; min-width:7rem }
+    label select { min-height:2.35rem; background:white; color:var(--ink); max-width:min(100%,32rem) }
+    label select:disabled { cursor:default; background:#f0f2f1 }
+    .selectFrame { flex:1; min-width:min(20rem,100%) }
+    .table-wrap { overflow-x:auto; margin-bottom:.9rem }
+    table { width:100%; border-collapse:collapse; font-size:.87rem; font-variant-numeric:tabular-nums }
+    th, td { text-align:left; border-bottom:1px solid var(--line); padding:.52rem .65rem; vertical-align:top }
+    th { background:var(--tint); white-space:nowrap }
+    td { min-width:4.1rem }
+    td small { display:block; min-width:8rem }
+    .charts { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:.85rem; margin:.85rem 0 1.15rem }
+    .chart { border:1px solid var(--line); border-radius:6px; padding:.75rem; margin:0 }
+    .bar-row { display:grid; grid-template-columns:7rem 1fr 3.2rem; align-items:center; gap:.45rem; font-size:.78rem; margin:.35rem 0 }
+    .bar-row strong { text-align:right; font-variant-numeric:tabular-nums }
+    .bar-track { background:var(--tint); height:.65rem; border-radius:2px; overflow:hidden }
+    .bar-fill { display:block; height:100%; background:var(--accent) }
+    .bar-fill.baseline { background:#536ba2 }
+    .bar-axis { display:flex; justify-content:space-between; margin-left:7.45rem; margin-right:3.65rem; color:var(--muted); font-size:.72rem }
+    .panel-grid { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(145px,1fr); overflow-x:auto; gap:.75rem; padding:0 0 .35rem }
+    figure { margin:0; min-width:0 }
+    figure img { display:block; width:100%; aspect-ratio:1; background:#edf0eb; object-fit:contain; border-radius:5px }
+    figure a { display:block }
+    figcaption { font-size:.8rem; overflow-wrap:anywhere; margin:.3rem 0 .05rem }
+    .empty-image { display:grid; place-items:center; aspect-ratio:1; background:#edf0eb; padding:.6rem; text-align:center; color:var(--muted); border-radius:5px }
+    .focus-row { display:flex; flex-wrap:wrap; justify-content:space-between; gap:.35rem 1rem; margin:.45rem 0 }
+    .focus-row strong { color:var(--accent) }
+    details { margin:.65rem 0; border-top:1px solid var(--line); padding-top:.55rem }
+    summary { width:fit-content; cursor:pointer; font-weight:650; margin-bottom:.5rem }
+    .gallery { display:grid; gap:.85rem; grid-template-columns:repeat(auto-fill,minmax(152px,1fr)) }
+    .file-list { margin:0; padding-left:1.4rem; columns:2 220px; max-height:22rem; overflow:auto; font-size:.86rem; overflow-wrap:anywhere }
+    pre { padding:.7rem; background:#f3f5ef; overflow:auto; max-height:21rem }
+    .warning { background:#fbf1d9; padding:.5rem .7rem; color:#5a411a; border-left:3px solid #ad7116 }
+    .model-run + .model-run { margin-top:1.15rem }
+  </style>
+</head>
+<body>
+<header>
+  <h1>ANNAlyzer benchmark</h1>
+  <p>Battery tray blister detection and localization</p>
+  <nav id="tabs" role="tablist" aria-label="Results versions"></nav>
+</header>
+<main id="view" role="tabpanel"></main>
+<noscript>Enable JavaScript to browse the saved results and compare frames.</noscript>
+<script id="results" type="application/json"><!-- REPORT_DATA --></script>
+<script>
+"use strict";
+const versions = JSON.parse(document.getElementById("results").textContent);
+const view = document.getElementById("view");
+const nav = document.getElementById("tabs");
+const labels = ["Pixel AUROC", "Pixel AP", "AUPRO", "Image AUROC", "Image AP"];
+const metricKeys = ["pixel_auroc", "pixel_ap", "aupro", "image_auroc", "image_ap"];
+const sizeKeys = ["small_lt64", "medium_64_to_511", "large_ge512"];
+const title = text => text ? text[0].toUpperCase() + text.slice(1) : "";
+const format = (value, digits = 4) => typeof value === "number" ? value.toFixed(digits) : "N/A";
+const escape = value => String(value ?? "").replace(/[&<>"']/g, c =>
+  ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"})[c]
+);
+const link = (text, url) => url ? `<a href="${escape(url)}">${escape(text)}</a>` : "";
+const row = cells => `<tr>${cells.map(item => `<td>${item}</td>`).join("")}</tr>`;
+function table(columns, rows) {
+  return `<div class="table-wrap"><table><thead><tr>${columns.map(c => `<th scope="col">${escape(c)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`;
+}
+function figure(picture, caption, note = "") {
+  const image = picture
+    ? `<a href="${escape(picture.url)}" target="_blank" rel="noopener"><img src="${escape(picture.thumb)}" loading="lazy" decoding="async" alt="${escape(caption)}"></a>`
+    : `<div class="empty-image">${escape(note || "Image unavailable")}</div>`;
+  return `<figure>${image}<figcaption>${escape(caption)}${picture?.generated ? " · from saved map" : ""}</figcaption></figure>`;
+}
+function select(id, label, options, current, css = "") {
+  return `<label class="${css}">${escape(label)}<select id="${id}" ${options.length ? "" : "disabled"}>${options.map(
+    ([value, text]) => `<option value="${escape(value)}"${value === current ? " selected" : ""}>${escape(text)}</option>`
+  ).join("")}</select></label>`;
+}
+function details(caption, content) {
+  return `<details><summary>${escape(caption)}</summary>${content}</details>`;
+}
+function files(items) {
+  return `<ul class="file-list">${items.map(item => `<li>${link(item.name, item.url)}</li>`).join("")}</ul>`;
+}
+const versionByName = Object.fromEntries(versions.map(v => [v.name, v]));
+const selected = {};
+const state = {tab:versions.at(-1).name, base:versions[0].name, next:versions.at(-1).name,
+               light:"regular", stage:"validation", comparisonLight:"regular", comparisonStage:"validation",
+               frame:"", compareFrame:"", mode:"overlay", compareMode:"overlay"};
+function runs(version, useSelection = false) {
+  return Object.entries(version.models).map(([model, items]) =>
+    (useSelection && items.find(run => run.name === selected[version.name + model])) || items[0]
+  );
+}
+function groups(runs, stage, light) {
+  return runs.flatMap(run => run.groups
+    .filter(g => (!stage || g.stage === stage) && (!light || g.light === light))
+    .map(group => ({...group, model:run.model, version:run.version, key:run.key})));
+}
+function options(items) {
+  return [...new Set(items)].map(v => [v, title(v)]);
+}
+function keepAvailable(current, entries) {
+  return entries.some(([key]) => key === current) ? current : (entries[0]?.[0] || "");
+}
+function selectedFrames(items, acrossVersions) {
+  const indexed = new Map();
+  for (const group of items) {
+    for (const frame of group.frames) {
+      if (!frame.identity) continue;
+      const matched = indexed.get(frame.identity) || {frame, outputs:{}};
+      matched.outputs[group.key] = frame;
+      indexed.set(frame.identity, matched);
+    }
+  }
+  return [...indexed.entries()].filter(([, item]) => {
+    if (!acrossVersions) return true;
+    return items.some(g => g.version === state.base && item.outputs[g.key])
+      && items.some(g => g.version === state.next && item.outputs[g.key]);
+  }).sort(([, a], [, b]) => Number(a.frame.normal) - Number(b.frame.normal) || a.frame.sample.localeCompare(b.frame.sample));
+}
+function frameExplorer(items, compare) {
+  const field = key => compare ? "compare" + title(key) : key;
+  const fields = [...selectedFrames(items, compare)];
+  const choices = fields.map(([key, item]) => [key, item.frame.sample + (item.frame.normal ? " · normal" : " · defect")]);
+  if (!state[field("frame")]) {
+    state[field("frame")] = choices.find(([, name]) => name.startsWith("regular/0097 "))?.[0] || "";
+  }
+  state[field("frame")] = keepAvailable(state[field("frame")], choices);
+  const focus = fields.find(([key]) => key === state[field("frame")])?.[1];
+  const controls = `<div class="controls">${select(field("frame"), "Matched frame", choices, state[field("frame")], "selectFrame")}
+    ${select(field("mode"), "Model image", [["overlay","Prediction overlay"],["heat","Heatmap"]], state[field("mode")])}</div>`;
+  if (!focus) return controls + '<p class="empty">No verified matching source images and masks are available for this selection.</p>';
+  const frame = focus.frame;
+  const origin = figure(frame.images.image, "Original image");
+  const truth = figure(frame.images.mask, "Ground truth (GT)", frame.normal ? "Normal frame · no defect mask" : "Mask unavailable");
+  const outputs = items.map(group => {
+    const file = focus.outputs[group.key];
+    const label = compare ? `${group.version} · ${group.model}` : group.model;
+    const picked = file?.images[state[field("mode")]];
+    const score = file ? `<p class="small">Score ${format(file.score)}${file.flagged == null ? "" : file.flagged ? " · flagged" : " · clear"}<br>${link("Raw score map", file.raw)}</p>` : "";
+    return `<div>${figure(picked, label, file ? "Image unavailable" : "Frame unavailable in this run")}${score}</div>`;
+  });
+  const meta = `<div class="focus-row"><strong>${escape(frame.sample)}</strong><span class="sub small">${choices.length} verified frames · ${link("Ground-truth overlay", frame.images.truthOverlay?.url)}</span></div>`;
+  return controls + meta + `<div class="panel-grid">${origin}${truth}${outputs.join("")}</div>`
+    + '<p class="sub small">Heatmaps use each run’s recorded display scale. Compare where the model responds.</p>';
+}
+function scoreCharts(items, baseline = null) {
+  const charts = metricKeys.map((key, i) => {
+    const bars = [];
+    for (const group of items) {
+      if (baseline) {
+        const prior = baseline.find(g => g.model === group.model);
+        const cohort = cohortKey(group, key);
+        if (!prior || !cohort || cohort !== cohortKey(prior, key)
+            || typeof prior.metrics[key] !== "number" || typeof group.metrics[key] !== "number") continue;
+        bars.push([`${prior.version} ${prior.model}`, prior.metrics[key], "baseline"]);
+      }
+      if (typeof group.metrics[key] === "number") {
+        bars.push([baseline ? `${group.version} ${group.model}` : group.model, group.metrics[key], ""]);
+      }
+    }
+    if (!bars.length) return "";
+    return `<article class="chart"><h3>${escape(labels[i])}</h3>${bars.map(([name, value, side]) =>
+      `<div class="bar-row"><span>${escape(name)}</span><span class="bar-track" aria-hidden="true"><span class="bar-fill ${side}" style="width:${100 * Math.max(0, Math.min(1, value))}%"></span></span><strong>${format(value)}</strong></div>`
+    ).join("")}<div class="bar-axis" aria-hidden="true"><span>0</span><span>1</span></div></article>`;
+  }).join("");
+  return charts ? `<div class="charts" aria-label="Metric bar charts">${charts}</div>` : "";
+}
+function metricsCard(items) {
+  if (!items.length) return '<p class="empty">Metrics are unavailable for this selection.</p>';
+  const main = table(["Model / protocol", ...labels, "s/frame", "Bank"], items.map(g =>
+    row([`<strong>${escape(g.model)}</strong><small>${escape(g.protocol)}</small>`,
+         ...metricKeys.map(k => format(g.metrics[k])), format(g.resources.meanSeconds, 3),
+         g.resources.bank ? `${escape(g.resources.bank.join(" × "))}<small>${format(g.resources.bankMib, 2)} MiB</small>` : "N/A"])
+  ));
+  const size = table(["Model", "Small <64 px²", "Medium 64–511 px²", "Large ≥512 px²"], items.map(g =>
+    row([escape(g.model), ...sizeKeys.map(k => {
+      const value = g.sizes[k];
+      return value ? `${format(value.aupro)} / ${format(value.mean_overlap_at_1pct_fpr)}<small>${escape(value.components)} components</small>` : "N/A";
+    })])
+  ));
+  const resources = table(["Model", "Threshold", "TN / FP", "TP / FN", "Sensitivity / FPR", "Peak RAM", "VRAM allocated / reserved"], items.map(g => {
+    const n = g.cohorts?.normals, d = g.cohorts?.defects;
+    const percentage = v => typeof v === "number" ? (100 * v).toFixed(1) + "%" : "N/A";
+    return row([escape(g.model), format(g.threshold, 8),
+      n ? `${n.frames - n.false_positives} / ${n.false_positives}` : "N/A",
+      d ? `${d.true_positives} / ${d.frames - d.true_positives}` : "N/A",
+      n && d ? `${percentage(d.sensitivity)} / ${percentage(n.false_positive_rate)}` : "N/A",
+      g.resources.ram == null ? "N/A" : `${format(g.resources.ram, 1)} MiB`,
+      g.resources.allocated == null ? "N/A" : `${format(g.resources.allocated, 1)} / ${format(g.resources.reserved, 1)} MiB`]);
+  }));
+  const timings = items.map(g => {
+    const entries = Object.entries(g.resources.timings);
+    return entries.length ? details(`${g.model} stage timings`, table(["Stage", "Seconds"],
+      entries.map(([label, seconds]) => row([escape(label), format(seconds, 3)])))) : "";
+  }).join("");
+  const note = [...new Set(items.filter(g => g.threshold != null && g.thresholdRule).map(g => g.thresholdRule))];
+  const cohortIDs = new Set(items.map(g => cohortKey(g, "aupro")));
+  const cohortNote = items.length > 1 && (cohortIDs.size > 1 || cohortIDs.has(null))
+    ? '<p class="warning small">The pixel cohorts differ or could not be verified as identical. Read each row as its own result.</p>' : "";
+  const limits = [...new Set(items.map(g => g.auproLimit))].map(v => format(v * 100, 0) + "%");
+  const rankingNotes = [...new Set(items.filter(g => g.imageRankingNote
+    && g.metrics.image_auroc == null && g.metrics.image_ap == null).map(g => g.imageRankingNote))];
+  const ranking = rankingNotes.length
+    ? `<p class="sub small">Image AUROC and AP are unavailable. ${escape(rankingNotes.join(" "))}</p>` : "";
+  return cohortNote + scoreCharts(items) + main + ranking + `<p class="sub small">AUPRO integrates region overlap to ${escape(limits.join(" or "))} background-pixel FPR. Size cells show AUPRO / overlap at 1% background-pixel FPR.</p>`
+    + size + resources + (note.length ? `<p class="sub small">Threshold rule: ${escape(note.join(" · "))}</p>` : "") + timings;
+}
+function modelRun(run) {
+  const warnings = run.warnings.map(w => `<p class="warning small">${escape(w)}</p>`).join("");
+  const plots = run.gallery.filter(p => /(^|\/)(?:.*comparis.*|training_curves|image_scores|lighting_heatmaps|lighting_predictions|defect_size_metrics|validation_metrics)\.png$/i.test(p.name));
+  const art = run.gallery.length ? details(`All saved images (${run.gallery.length})`,
+      `<div class="gallery">${run.gallery.map(p => figure(p, p.name)).join("")}</div>`) : "";
+  const variants = Object.entries(run.ablations);
+  const ablations = variants.length ? table(["Candidate budget / stitch", ...labels, "Seam step"], variants.map(([name, m]) =>
+    row([escape(name.replace("_", " / ")), ...metricKeys.map(key => format(m[key])), format(m.normal_seam?.step)]))) : "";
+  const frameLists = run.groups.map(g => {
+    const rows = g.frames.map(f => {
+      const choices = [["Original", f.images.image], ["GT", f.images.mask], ["GT overlay", f.images.truthOverlay],
+                       ["Heatmap", f.images.heat], ["Prediction overlay", f.images.overlay]];
+      const visuals = choices.filter(([, p]) => p).map(([label, p]) => link(label, p.url)).join(" · ");
+      return row([escape(f.sample), f.normal ? "Normal" : "Defect", format(f.score),
+                  f.flagged == null ? "N/A" : f.flagged ? "Flagged" : "Clear", format(f.seconds, 3),
+                  visuals || "Unavailable", link("NPY", f.raw) || "Unavailable"]);
+    });
+    const scale = g.displayScale?.[1];
+    const artifacts = [link("JSON report", g.report), link("Checkpoint", g.checkpoint)].filter(Boolean).join(" · ");
+    return details(`${title(g.stage)} · ${title(g.light)} · ${rows.length} frames`, `<p class="small">${artifacts}
+      ${scale == null ? "" : ` · Display scale 0–${format(scale)}`}</p>
+      ${table(["Frame","Class","Score","Decision","Inference s","Images","Raw map"], rows)}`);
+  }).join("");
+  return `<article class="model-run"><h3>${escape(run.model)}</h3><p class="sub small">${escape(run.name)}</p>
+    ${warnings}${plots.length ? `<div class="gallery">${plots.map(p => figure(p, p.name)).join("")}</div>` : ""}
+    ${ablations}${frameLists}${art}${details(`Files (${run.files.length})`, files(run.files))}
+    ${details("Configuration and provenance", `<pre>${escape(JSON.stringify(run.configuration, null, 2))}</pre>`)}</article>`;
+}
+function renderVersion() {
+  const version = versionByName[state.tab];
+  const active = runs(version, true);
+  const missing = ["PatchCore", "AnomalyDINO", "U-Net"].filter(model => !version.models[model]);
+  const runMenus = Object.entries(version.models).map(([model, items], i) =>
+    select("run" + i, model + " run", items.map(run => [run.name, run.name]),
+      selected[version.name + model] || items[0].name)).join("");
+  const all = groups(active);
+  const stages = options(all.map(g => g.stage));
+  const activeStage = state.stage = keepAvailable(state.stage, stages);
+  const lights = options(groups(active, activeStage).map(g => g.light));
+  const activeLight = state.light = keepAvailable(state.light, lights);
+  const current = groups(active, activeStage, activeLight);
+  view.innerHTML = `<section><h2>${escape(version.name)} runs</h2>
+    ${missing.length ? `<p class="sub small">Unavailable in this version: ${escape(missing.join(", "))}</p>` : ""}
+    <div class="controls">${runMenus}</div>
+    <div class="controls">${select("stage", "Evaluation stage", stages, activeStage)}${select("light", "Lighting", lights, activeLight)}</div>
+    ${metricsCard(current)}</section>
+    <section><h2>Same-frame comparison</h2>${frameExplorer(current, false)}</section>
+    <section><h2>Plots, images and run files</h2>${active.map(modelRun).join("")}</section>`;
+  Object.keys(version.models).forEach((model, i) => {
+    document.getElementById("run" + i).onchange = e => { selected[version.name + model] = e.target.value; render(true); };
+  });
+  bind(["stage", "light", "frame", "mode"]);
+}
+function cohortKey(group, metric) {
+  const subset = group.frames.filter(f => !metric.startsWith("pixel_") && metric !== "aupro"
+    || group.pixelScope !== "defects" || !f.normal);
+  if (!subset.length || subset.some(f => !f.identity)) return null;
+  return group.metricDefinition + "|" + subset.map(f => f.identity).sort().join("|");
+}
+function compareMetrics(left, right) {
+  const rows = [], regionRows = [];
+  const delta = (a, b) => {
+    if (typeof a !== "number" || typeof b !== "number") return "N/A";
+    const difference = (b - a) * 100;
+    return `${difference > 0 ? "+" : ""}${difference.toFixed(2)} pp`;
+  };
+  for (const first of left) {
+    const second = right.find(g => g.model === first.model);
+    if (!second) continue;
+    const differences = metricKeys.map(key => {
+      const a = first.metrics[key], b = second.metrics[key], cohort = cohortKey(first, key);
+      return cohort && cohort === cohortKey(second, key) ? delta(a, b) : "N/A";
+    });
+    rows.push(row([`<strong>${escape(first.model)}</strong><small>${escape(first.protocol)} → ${escape(second.protocol)}</small>`, ...differences]));
+    const key = cohortKey(first, "aupro");
+    regionRows.push(row([escape(first.model), ...sizeKeys.map(size => {
+      if (!key || key !== cohortKey(second, "aupro")) return "N/A";
+      const a = first.sizes[size], b = second.sizes[size];
+      return delta(a?.aupro, b?.aupro) + " / " + delta(a?.mean_overlap_at_1pct_fpr, b?.mean_overlap_at_1pct_fpr);
+    })]));
+  }
+  return rows.length ? table(["Model / protocol change", ...labels], rows)
+    + details("Defect-size changes · AUPRO / overlap at 1% FPR",
+      table(["Model", "Small", "Medium", "Large"], regionRows))
+    : '<p class="empty">No comparable model pairs for this selection.</p>';
+}
+function renderComparison() {
+  const versionOptions = versions.map(v => [v.name, v.name]);
+  const leftRuns = runs(versionByName[state.base]), rightRuns = runs(versionByName[state.next]);
+  const all = [...groups(leftRuns), ...groups(rightRuns)];
+  const stages = options(all.map(g => g.stage));
+  state.comparisonStage = keepAvailable(state.comparisonStage, stages);
+  const lights = options(all.filter(g => g.stage === state.comparisonStage).map(g => g.light));
+  state.comparisonLight = keepAvailable(state.comparisonLight, lights);
+  const left = groups(leftRuns, state.comparisonStage, state.comparisonLight);
+  const right = groups(rightRuns, state.comparisonStage, state.comparisonLight);
+  const different = state.base !== state.next;
+  view.innerHTML = `<section><h2>Compare versions</h2>
+    <div class="controls">${select("base", "Baseline", versionOptions, state.base)}${select("next", "Comparison", versionOptions, state.next)}
+    ${select("comparisonStage", "Evaluation stage", stages, state.comparisonStage)}${select("comparisonLight", "Lighting", lights, state.comparisonLight)}</div>
+    <p class="sub small">Changes use the latest completed runs and require the same verified frame and label cohort for each metric. N/A indicates unavailable or unmatched values.</p>
+    ${different ? scoreCharts(right, left) + compareMetrics(left, right) : '<p class="empty">Select two different versions.</p>'}</section>
+    ${different ? `<section><h2>Same-frame comparison across versions</h2>${frameExplorer([...left, ...right], true)}</section>` : ""}`;
+  bind(["base", "next", "comparisonStage", "comparisonLight", "compareFrame", "compareMode"]);
+}
+function bind(fields) {
+  for (const name of fields) {
+    const element = document.getElementById(name);
+    if (element) element.onchange = e => { state[name] = e.target.value; render(true, name); };
+  }
+}
+function render(keepScroll = false, focus = null) {
+  const top = keepScroll ? window.scrollY : 0;
+  nav.innerHTML = [...versions.map(v => v.name), "Compare"].map(tab =>
+    `<button id="tab-${escape(tab)}" type="button" role="tab" aria-selected="${state.tab === tab}" aria-controls="view" data-tab="${escape(tab)}">${escape(tab)}</button>`
+  ).join("");
+  nav.querySelectorAll("button").forEach(button => {
+    button.onclick = () => { state.tab = button.dataset.tab; render(false, button.id); };
+  });
+  view.setAttribute("aria-labelledby", "tab-" + state.tab);
+  if (state.tab === "Compare") renderComparison();
+  else renderVersion();
+  document.getElementById(focus)?.focus({preventScroll:true});
+  window.scrollTo(0, top);
+}
+render();
+</script>
+</body>
+</html>

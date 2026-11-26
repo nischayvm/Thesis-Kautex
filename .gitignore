@@ -1,4 +1,7 @@
 /data/
+/Anamoly_detection/reports/
+/Anamoly_detection/*/results/V3/
+/Anamoly_detection/*/V1/.mpl-cache/
 *.blend[0-9]*
 __pycache__/
 *.py[cod]

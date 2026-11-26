@@ -358,9 +358,9 @@ Archived each model's V1 scripts, configuration and local weight files in `V1/`,
 
 | Launcher | V2 regular-light procedure |
 | --- | --- |
-| [PatchCore](../Run_PatchCore_V2.bat) | One-tile fit and reload smoke check, then normal-only fitting from the 70 V2 training views. Uses WideResNet50-2 `layer2` and `layer3`, FP32, 128 stratified candidates per tile and a 10% coreset. |
-| [AnomalyDINO](../Run_AnomalyDINO_V2.bat) | One-tile fit and reload smoke check, then fitting on the same 70 views. Uses frozen DINOv2 ViT-S/14, FP32, 518 × 518 reflection padding, chunked cosine search, 128 stratified candidates per tile and a 10% coreset. Removes padding before stitching. |
-| [U-Net](../Run_UNet_V2.bat) | Loads and verifies the red epoch-7 validation checkpoint. Runs a forward smoke check and red-to-regular transfer with the V1 FP16 autocast inference settings. Regular V2 provides no labeled training defects for a supervised fit. |
+| [PatchCore](../bat%20files/Run_PatchCore_V2.bat) | One-tile fit and reload smoke check, then normal-only fitting from the 70 V2 training views. Uses WideResNet50-2 `layer2` and `layer3`, FP32, 128 stratified candidates per tile and a 10% coreset. |
+| [AnomalyDINO](../bat%20files/Run_AnomalyDINO_V2.bat) | One-tile fit and reload smoke check, then fitting on the same 70 views. Uses frozen DINOv2 ViT-S/14, FP32, 518 × 518 reflection padding, chunked cosine search, 128 stratified candidates per tile and a 10% coreset. Removes padding before stitching. |
+| [U-Net](../bat%20files/Run_UNet_V2.bat) | Loads and verifies the red epoch-7 validation checkpoint. Runs a forward smoke check and red-to-regular transfer with the V1 FP16 autocast inference settings. Regular V2 provides no labeled training defects for a supervised fit. |
 
 Each runner preserves the 2048 × 2048 frame, native 512 px tiles, 128 px overlap, Gaussian stitching with sigma 128 px, and seed 24117. The existing red and green V1 runs supply the colored baselines. All launchers support `check-env`, `check`, and `validate`, with validation as the default. `test "<run-folder>"` verifies the saved validation inputs, source code, calibration and checkpoint before scoring the reserved cohorts. `all` explicitly requests both stages.
 
@@ -893,3 +893,68 @@ The highest normal validation score sets the threshold. The validation false-pos
 - **AnomalyDINO / `regular_v2_20261124T141424_324010Z`**. [Report](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/report.json) · [Scores CSV](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/scores.csv) · [Score plot](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/image_scores.png) <!-- v2-result-report: Anamoly_detection/anomalydino/results/V2/regular_v2_20261124T141424_324010Z/validation/report.json -->
 - **PatchCore / `regular_v2_20261124T140600_238105Z`**. [Report](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/report.json) · [Scores CSV](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/scores.csv) · [Score plot](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/image_scores.png) <!-- v2-result-report: Anamoly_detection/patchcore/results/V2/regular_v2_20261124T140600_238105Z/validation/report.json -->
 - **U-Net / `regular_v2_20261124T143148_520300Z`**. [Report](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/unet/results/V2/regular_v2_20261124T143148_520300Z/validation/report.json) · [Scores CSV](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/unet/results/V2/regular_v2_20261124T143148_520300Z/validation/scores.csv) · [Score plot](https://github.com/nischayvm/Thesis-Kautex/blob/ecab15c57ba76f2e2c5965dce565d43033ad0c55/Anamoly_detection/unet/results/V2/regular_v2_20261124T143148_520300Z/validation/image_scores.png) <!-- v2-result-report: Anamoly_detection/unet/results/V2/regular_v2_20261124T143148_520300Z/validation/report.json -->
+
+
+## 2026-11-25 ? V3 three-lighting workflow
+
+The existing model batch filenames in the bat files folder now default to V3. PatchCore and AnomalyDINO refit a normal bank for each of regular, red and green. U-Net fits supervised red and green models and transfers its selected V3 red checkpoint to regular. The V1 grouped split supplies 70 training and 15 validation setups per color, with separate clean and defective validation frames. Regular uses the reviewed V2 normal split and the existing three fixed-pose validation defects. All fits use the established architecture and tile settings.
+
+Red and green pixel metrics pool both clean and defective frames. Their matched image-level AUROC and AP are available after validation. Regular retains separate normal calibration and fixed-pose defect localization. Reports and checkpoints go into each model's results/V3 tree. The HTML report discovers all three lighting conditions when the run writes its completion record. The V3 launchers passed dataset and CUDA checks. The colored report flow was exercised with synthetic inputs. No V3 model fitting or reserved test evaluation was performed in this setup entry. [V3 workflow](v3_workflow.py) ? [Launch instructions](README.md#v3-three-lighting-runs)
+
+
+## 2026-11-25 ? Flownomaly V4 setup
+
+Added a separate Flownomaly model, Python environment and launcher. Each lighting condition starts from audited DINOv2 ViT-S/14 weights and fine-tunes its own last two transformer blocks and output normalization with masked-token distillation. It then freezes that encoder and learns a normal-token flow. The implementation adapts the authors' single-step conditional recovery and normal-only Jacobian gain-to-noise calibration to native ANNAlyzer tiles. This is a fine-tuned ViT-S adaptation of the published method.
+
+The existing 70 training normals per light are split into 60 fit, five checkpoint selection and five flow calibration images. Existing red, green and regular validation assignments are reused. Encoder and flow checkpoints are separate per light under results/V4 and the flow records its encoder's SHA-256. The V4 configuration records its three feature layers, seed, losses and calibrated operating time.
+
+The local Python 3.12.13 environment was installed from the existing offline cache. The launcher verified PyTorch 2.9.1+cu128, CUDA 12.8, the frozen input cohorts and vetted initialization weights. The CPU smoke test exercised a ViT optimizer update, a flow optimizer update, JGN, and identical 512 ? 512 map and score recovery after separately saving and loading both checkpoints. No full dataset fit or held-out evaluation was run during setup. [Model and launcher](flownomaly/README.md) ? [Flownomaly paper](https://arxiv.org/abs/2610.32964)
+
+## 2026-11-26 · Script review, completed validation runs and inspection demo
+
+This entry updates the status recorded in the earlier V3 and V4 setup entries. The review used existing code, completion records, metrics, and render manifests.
+
+### Current script and launcher map
+
+| Area | Current implementation |
+| --- | --- |
+| Blender scene and annotations | The scene controls drive camera positions, LED properties, and multi-camera capture. The anomaly generator places seeded flange and laminate blisters. The prototype renderer supplies image and binary mask helpers, the V1 batch writes audited clean/defect/mask triples, and the V2 normal renderer adds new regular views and checks cross-fold duplicates. [Controls](../scripts/annalyzer_controls.py) · [Defect generator](../scripts/generate_tray_anomalies.py) · [Prototype](../scripts/render_prototype_dataset.py) · [V1 batch](../scripts/render_annalyzer_batch.py) · [V2 normals](../scripts/render_annalyzer_normals_v2.py) |
+| Dataset and evaluation | The V1 splitter groups red and green by setup and keeps image pairs together. V2 checks hashes and reconstructs the regular cohorts. V3 reuses those assignments and pools the clean and defective frames for red/green pixel metrics. The regular reports use the varied clean frames for threshold calibration and the fixed-pose defects for localization. [Split builder](patchcore/V1/split_dataset.py) · [V2 workflow](v2_workflow.py) · [V3 workflow](v3_workflow.py) · [Pixel/region metrics](patchcore/V2/phase3_metrics.py) |
+| PatchCore and AnomalyDINO | Frozen WideResNet50-2 or DINOv2 features feed separate normal banks for each light. The 128-candidate, 10% coreset fit and Gaussian stitching carry forward from V1. The V3 checklist can run a subset of lights. [PatchCore adapter](patchcore/V2/run_v2.py) · [AnomalyDINO adapter](anomalydino/V2/run_v2.py) · [Lighting checklist](lighting_launcher.py) |
+| U-Net | ResNet18 U-Net trains with BCE plus Dice on paired red and green data, selecting by validation pixel AP. The V3 regular result transfers the selected V3 red checkpoint. Its batch defaults to the V3 workflow for all three evaluation lights and still exposes the V2 regular route. [Model](unet/V1/model.py) · [Trainer](unet/V1/run.py) · [Batch launcher](../bat%20files/Run_UNet_V2.bat) |
+| Flownomaly | The V4 checklist selects lights. Per light, masked-token distillation updates the last two ViT blocks and output normalization. The fitted encoder is then frozen while a time-conditioned flow learns normal patch features. The per-light encoder and flow are saved separately. [Model](flownomaly/model.py) · [Runner](flownomaly/run_v4.py) · [Batch launcher](../bat%20files/Run_Flownomaly_V4.bat) |
+| Reporting | HTML discovers versions from local completed reports, including the regular-only V4 run. Excel can export one workbook per version. The publication batch invokes the results-to-journal importer and selects report summaries, plots, heatmaps, and weights for Git. V4 publication requires both checkpoint hashes to match. A local V4 dry run accepted its one regular report and six heatmaps. [HTML generator](../scripts/generate_benchmark_html_report.py) · [Excel generator](../scripts/generate_benchmark_excel.py) · [Journal importer](../scripts/update_journal_from_results.py) · [Publisher](../scripts/publish_v2_results.py) |
+
+### Saved V3 validation
+
+Red and green each contain 15 clean and 15 defective frames. Regular pixel ranking uses three fixed-pose defective frames. TP counts use the saved threshold, which is the maximum among 15 clean validation scores for that model and lighting. Validation false positives are zero by construction. AUPRO integrates to 30% background-pixel FPR.
+
+| Light | Model | Pixel AUROC | Pixel AP | AUPRO | Image AUROC | Image AP | Defective frames flagged |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Red | PatchCore | 0.9486 | 0.2960 | 0.8177 | 0.9200 | 0.9314 | 9/15 |
+| Red | AnomalyDINO | 0.8378 | 0.1346 | 0.6304 | 0.8711 | 0.8857 | 8/15 |
+| Red | U-Net | 0.9090 | 0.7456 | 0.5897 | 0.9733 | 0.9810 | 14/15 |
+| Green | PatchCore | 0.9455 | 0.2930 | 0.8346 | 0.9156 | 0.9220 | 8/15 |
+| Green | AnomalyDINO | 0.8317 | 0.1656 | 0.6867 | 0.8667 | 0.8873 | 8/15 |
+| Green | U-Net | 0.9056 | 0.7408 | 0.8099 | 1.0000 | 1.0000 | 15/15 |
+| Regular | PatchCore | 0.9610 | 0.2710 | 0.9071 | N/A | N/A | 3/3 |
+| Regular | AnomalyDINO | 0.8194 | 0.1946 | 0.7163 | N/A | N/A | 1/3 |
+| Regular | U-Net, red transfer | 0.9586 | 0.7834 | 0.8198 | N/A | N/A | 2/3 |
+
+PatchCore leads pixel AUROC and AUPRO on all three V3 cohorts. U-Net leads pixel AP for all three and image ranking on red and green. Those results use one synthetic split. [V3 report and heatmaps](reports/V3_validation_report.html) · [Architecture and detailed results](MODEL_PERFORMANCE.md#v3-validation-results)
+
+### Completed V4 regular validation
+
+Run `flownomaly_v4_20261125T075129_092983Z` completed regular lighting. The normal training subsets contain 60 fit, five flow checkpoint-selection, and five operating-time calibration views. The saved ViT training loss moved from 1.3398 to 1.0771 in three epochs. The selected flow checkpoint was epoch 12 with normal selection loss 1.3404, and the normal-only operating time was 0.95.
+
+| Pixel AUROC | Pixel AP | AUPRO | Image AUROC / AP | Image threshold | TN / FP | TP / FN | Mean inference |
+| ---: | ---: | ---: | --- | ---: | --- | --- | ---: |
+| 0.6534 | 0.0147 | 0.3448 | N/A / N/A | 5.555541 | 15 / 0 | 0 / 3 | 0.762 s/frame |
+
+For small, medium and large regions, AUPRO was 0.4045, 0.4914 and 0.2003. Mean overlap at 1% background pixel FPR was 0.0000, 0.0000 and 0.0432. Recorded times were 40.73 s for ViT fine-tuning, 45.20 s for token extraction, 10.62 s for flow matching, and 15.25 s for operating-time calibration. Inference used a sampled peak 2,421.1 MiB process RSS and 151.5 MiB allocated CUDA memory. This run trailed the three V3 models on all three regular pixel metrics and flagged zero of the three fixed-pose defects at its saved threshold. The completion record lists only regular. Red/green V4 and held-out test metrics remain unavailable. [Completion](flownomaly/results/V4/flownomaly_v4_20261125T075129_092983Z/complete.json) · [Training](flownomaly/results/V4/flownomaly_v4_20261125T075129_092983Z/regular/training.json) · [Validation](flownomaly/results/V4/flownomaly_v4_20261125T075129_092983Z/regular/validation/report.json)
+
+### Demo images, HTML refresh and runtime check
+
+- The Blender demo launcher writes each fresh render, matching mask, and `demo.json` under `data/demo_runs/`. The script uses a fixed Front Left setup, 1.610 m camera height and 1.102 m LED height. The three completed manifests examined describe two regular blistered renders with seed 111 and one red blistered render. These are standalone demo renders. The saved validation reports still pair 15 varied regular clean images with three legacy fixed-pose defects. Regular image AP and AUROC therefore remain N/A in the refreshed HTML, which explains the capture difference alongside the saved pixel metrics and threshold decisions. [Demo renderer](../scripts/render_annalyzer_demo.py) · [Refreshed local HTML](reports/index.html)
+- The PyQt6 app loads saved V3 PatchCore, AnomalyDINO and U-Net states through separate workers. It has automatic RGB lighting selection with manual override, loading progress, a PASS/FAIL display, a tile and feature-grid explanation, and linked zoom for the tray, heatmap and ground-truth panels. Optional ground truth unlocks after prediction and gives single-frame pixel AP/AUROC from the raw map. PNGs at other resolutions are fitted to the 2048 × 2048 model canvas. Threshold interpretation on resized inputs is exploratory. [App instructions](inspection_app/README.md) · [Inference worker](inspection_app/worker.py) · [Pipeline view](inspection_app/pipeline_view.py) · [Synchronized comparison](inspection_app/comparison_view.py)
+- During this review, the PatchCore environment's Python launcher failed its version check with a UV child-process spawn error. The AnomalyDINO, U-Net, Flownomaly, and UI Python launchers returned their versions. Report generation used the working system Python with the local plotting dependencies. The saved PatchCore metrics remain available for reporting.

@@ -1,0 +1,18 @@
+{
+  "model": "Flownomaly",
+  "stage": "validation",
+  "lights": [
+    "regular"
+  ],
+  "dataset_sha256": {
+    "manifest_v2": "75f9254e20c003d5d591432c78423837d94a78e5b525abc08e292aafa6bd94b3",
+    "dataset_v2": "600888c4be43b3491aee107347f2437805afc8a9920669960cf804ef0a9cae1f",
+    "split_v1": "3234ec7635558c888f863aefe29d263399a47db5df2cba5aa4f5147a763c2677",
+    "audit_v1": "b6009b96dd73ff16511c9819a3ad441a939a8f05bd70fd0a564d0f3aeec80cd4"
+  },
+  "source_sha256": {
+    "model.py": "86ef31868c99d460afcaf65aabcfc97967ec9bba22754a84acc547d14000c9b5",
+    "run_v4.py": "3b264312a7ac3e1459f1fb32930cbe3052cbe868fa42ecdc4f5807c5516e22c8",
+    "uv.lock": "72c3f02fae9d1819d8e2de0da9a4204112fb177e41dcba0036b511ebb06aa8da"
+  }
+}

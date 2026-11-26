@@ -53,7 +53,7 @@ data/annalyzer_batch_2048/
 
 ## Running the batch
 
-The original [Render_ANNAlyzer.bat](../Render_ANNAlyzer.bat) V1 run wrote the dataset to `data/annalyzer_batch_2048`. The current launcher renders the V2 normal supplement to `data/annalyzer_regular_normals_v2`. Resume requires the same scene, scripts, and seed. The earlier prototype and timing pilot folders under `data` are separate.
+The render launcher opens a job menu for the original V1 three-light batch, the V2 regular-light normal supplement, and saved status. V1 writes to `data/annalyzer_batch_2048` and V2 to `data/annalyzer_regular_normals_v2`. Completed datasets are reported as complete before Blender launches. An incomplete run can resume with the same scene, scripts and seed. [Render launcher](../bat%20files/Render_ANNAlyzer.bat)
 
 The batch used Cycles with **100 maximum samples, 0.015 adaptive noise threshold, denoising, and RTX 4060 OptiX**. The completed run recorded **about 4 h 30 min** for 501 renders. The regular clean reference was rendered once, and the masks were exported with the defective images.
 
@@ -61,7 +61,7 @@ The batch used Cycles with **100 maximum samples, 0.015 adaptive noise threshold
 
 Each model folder contains frozen source and configuration under `V1/`, the adapted workflow under `V2/`, and outputs under `results/V1/` and `results/V2/`. The V1 scripts preserve the original layout assumptions for historical reproducibility. The batch launchers use the existing per-model `.venv` at the model root.
 
-Run a launcher from the project root. [PatchCore](../Run_PatchCore_V2.bat) · [AnomalyDINO](../Run_AnomalyDINO_V2.bat) · [U-Net](../Run_UNet_V2.bat)
+Open a launcher in the `bat files` folder. [PatchCore](../bat%20files/Run_PatchCore_V2.bat) · [AnomalyDINO](../bat%20files/Run_AnomalyDINO_V2.bat) · [U-Net](../bat%20files/Run_UNet_V2.bat)
 
 | Command argument | Action |
 | --- | --- |
@@ -76,6 +76,26 @@ Use `--help` for launcher options. The double-click default uses the decision re
 
 V2 uses the 15 varied-pose validation normals to set a threshold at their maximum score. A score above that threshold counts as an alarm. The 15 varied-pose test normals measure false alarms. Fixed-pose defects use the V1 assignments of three validation and 97 reserved test views and provide separate sensitivity and localization estimates. Varied-pose image AUROC and AP are unavailable because those captures have no matched defects. The red and green results come from the V1 benchmark. [Research journal](JOURNAL.md)
 
-After validation, run [Push_Model_Results.bat](../Push_Model_Results.bat) from the project. It selects the latest completed V2 validation run for each available model, appends any new selected runs to [JOURNAL.md](JOURNAL.md), and pushes the journal and results to GitHub `main`. Git tracks the report, per-image score CSV, and score chart. Git LFS stores a bundle with the fitted state, smoke diagnostics, and representative heatmaps. Source images, masks, raw score arrays, and test artifacts stay local. Run `Push_Model_Results.bat --dry-run` to verify the selected runs and preview the journal summary count before publishing.
+After validation, double-click the publishing batch to choose an available version and toggle its completed lighting conditions. It selects the latest completed validation per model and light, appends new selected results to [JOURNAL.md](JOURNAL.md), and pushes the journal and results to GitHub `main`. Git tracks reports, score CSVs, and score plots. Git LFS stores fitted states, available diagnostics, and heatmaps. Source images, masks, raw score arrays, and test artifacts stay local. From the project root in PowerShell, run `& ".\bat files\Push_Model_Results.bat" --dry-run --version V3 --lighting red green` to preview an explicit selection. [Publishing launcher](../bat%20files/Push_Model_Results.bat)
 
-Run `python scripts/update_journal_from_results.py` independently to append summaries from completed local V2 reports. Add `--from-git` to read reports published on GitHub `main` or `--dry-run` to preview the journal entry. The importer skips previously recorded runs and keeps held-out test results separate from validation. [Importer](../scripts/update_journal_from_results.py)
+Run `python scripts/update_journal_from_results.py` independently to append summaries from completed local V2–V4 reports. Add `--from-git` to read reports published on GitHub `main` or `--dry-run` to preview the journal entry. The importer skips previously recorded runs and keeps held-out test results separate from validation. [Importer](../scripts/update_journal_from_results.py)
+
+## Local benchmark report
+
+From the project root, use the PatchCore environment to generate the [interactive benchmark report](reports/index.html).
+
+```powershell
+.\Anamoly_detection\patchcore\.venv\Scripts\python.exe -B .\scripts\generate_benchmark_html_report.py
+```
+
+Open `Anamoly_detection/reports/index.html` in a browser. The report discovers versioned result folders, selects completed runs and compares exact source-image and mask pairs across models. The **Compare** tab reports metric changes for verified matching cohorts and shows the original, ground truth and model outputs for the same frame. Use the run selectors for earlier runs and the gallery for all saved images. If needed, the generator creates display-only previews from saved score maps and verified original data, using the recorded run scale. It writes the page and its media cache in `Anamoly_detection/reports/` and links to the existing full-size artifacts. [Generator](../scripts/generate_benchmark_html_report.py)
+
+### Excel workbooks
+
+Run `python scripts/generate_benchmark_excel.py` from the project root with a Python environment that has `openpyxl`. It writes one `Vn_results.xlsx` per discovered version to `Anamoly_detection/reports/excel/`. Add `--versions V3 V4` to select specific versions. The workbooks contain editable charts, filterable results, per-image scores, resource and training data, numeric JSON fields, and links to saved artifacts. [Excel exporter](../scripts/generate_benchmark_excel.py)
+
+## V3 three-lighting runs
+
+The existing batch filenames launch V3. Double-click PatchCore or AnomalyDINO in `bat files/` to select lighting. The checklist starts with all three selected. Type `1`, `2`, or `3` and press Enter to toggle red, green, or regular. `A` toggles all, an empty Enter starts the selected run, and `Q` cancels. To skip the menu, pass `validate` for all lights or `validate --lighting red green` for a subset. U-Net still runs all three directly. Pass `check` to verify the frozen datasets and `check-env` to verify the model environment. The explicit `v2` selector invokes the previous regular-only workflow. For example, `Run_PatchCore_V2.bat v2 validate --use-reviewed-split` runs V2. [PatchCore](../bat%20files/Run_PatchCore_V2.bat) · [AnomalyDINO](../bat%20files/Run_AnomalyDINO_V2.bat) · [U-Net](../bat%20files/Run_UNet_V2.bat)
+
+V3 refits separate PatchCore and AnomalyDINO normal banks for each light using the existing V1 red/green splits and V2 regular normal split. U-Net fits separate supervised red and green checkpoints and transfers the selected V3 red checkpoint to regular. Red and green each validate on 15 clean and 15 defective frames. Regular uses 15 varied clean views for calibration and the same three fixed-pose defects for localization. V3 run folders are local under each model’s `results/V3/`. Regenerate the HTML report after a run finishes to see its V3 tab. [V3 entry point](v3_workflow.py)
