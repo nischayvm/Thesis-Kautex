@@ -122,7 +122,12 @@ class Report:
         return {"url": url, "thumb": self.link(thumb), "name": path.name}
 
     def sources(self, sample, normal, manifest, audit_hash=None):
-        if normal and sample in manifest:
+        if sample in manifest and "files" in manifest[sample]:
+            row = manifest[sample]
+            image_root = Path(row["dataset"])
+            image = row["files"]["normal" if normal else "bubbles"]
+            mask = None if normal else row["files"]["masks"]
+        elif normal and sample in manifest:
             row = manifest[sample]
             image_root, image, mask = self.root, row, None
         elif audit_hash is None or audit_hash == sha(self.audit_path):
@@ -253,6 +258,9 @@ class Report:
         config = metadata.get("configuration", {})
         hashes = data.get("dataset_sha256", {})
         records = {}
+        if hashes.get("workstation_split") and sha(run / "split.json") == hashes["workstation_split"]:
+            split = read_json(run / "split.json")
+            records.update((key, {**row, "dataset": split["dataset"]}) for key, row in split["records"].items())
         for manifest, digest in hashes.items():
             if re.fullmatch(r"manifest_v[1-9][0-9]*", manifest) and sha(run / f"{manifest}.json") == digest:
                 records.update((row["image_id"], row) for row in read_json(run / f"{manifest}.json").values())

@@ -14,10 +14,10 @@ JOURNAL = ROOT / "Anamoly_detection" / "JOURNAL.md"
 MODELS = {"patchcore": "PatchCore", "anomalydino": "AnomalyDINO", "unet": "U-Net", "flownomaly": "Flownomaly"}
 TIME_STAMP = r"\d{8}T\d{6}_\d{6}Z"
 V2_RUN = rf"regular_v2_{TIME_STAMP}"
-MODERN_RUN = rf"[a-z_]+_v[34]_{TIME_STAMP}"
+MODERN_RUN = rf"[a-z_]+_v[345]_{TIME_STAMP}"
 REPORT_PATH = re.compile(
     rf"Anamoly_detection/(?P<model>{'|'.join(MODELS)})/results/"
-    rf"(?:(?P<v2>V2)/(?P<legacy>{V2_RUN})|(?P<modern>V[34])/(?P<run>{MODERN_RUN})/(?P<light>red|green|regular))/"
+    rf"(?:(?P<v2>V2)/(?P<legacy>{V2_RUN})|(?P<modern>V[345])/(?P<run>{MODERN_RUN})/(?P<light>red|green|regular))/"
     r"(?P<stage>validation|test)/report\.json"
 )
 GITHUB = "https://github.com/nischayvm/Thesis-Kautex"
@@ -42,7 +42,7 @@ def reports(from_git, selected_paths=None):
         for model in MODELS:
             results = JOURNAL.parent / model / "results"
             paths.update(file.relative_to(ROOT).as_posix() for file in results.glob("V2/*/*/report.json"))
-            paths.update(file.relative_to(ROOT).as_posix() for file in results.glob("V[34]/*/*/*/report.json")
+            paths.update(file.relative_to(ROOT).as_posix() for file in results.glob("V[345]/*/*/*/report.json")
                          if (file.parents[2] / "complete.json").is_file())
         read = lambda path: (ROOT / path).read_bytes()
         exists = lambda path: (ROOT / path).is_file()
@@ -92,11 +92,11 @@ def journal_section(source, entries, previous):
         return "", 0
     versions = ", ".join(sorted({entry[0].split("/")[3] for entry in new}))
     lines = [f"## Saved {versions} run results · {date.today().isoformat()}", "",
-             f"Imported from {source}. The regular pixel metrics pool fixed-pose defective frames. "
-             "Red and green pixel metrics pool both clean and defective frames. "
+             f"Imported from {source}. The V2–V4 regular pixel metrics pool fixed-pose defective frames. "
+             "Matched cohorts, including V5 regular, pool both clean and defective frames. "
              "Size columns show AUPRO / mean component overlap at 1% background pixel FPR. "
              "AUPRO integrates up to 30% background pixel FPR. Image decisions use the saved threshold "
-             "for varied normals and fixed-pose defects.", ""]
+             "from the corresponding validation cohort.", ""]
     for stage, title in (("validation", "Validation and calibration"), ("test", "Held-out test")):
         group = [entry for entry in new if entry[2]["stage"] == stage]
         if not group:

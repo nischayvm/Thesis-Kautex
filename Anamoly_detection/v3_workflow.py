@@ -56,7 +56,7 @@ def cohorts():
     return dataset, hashes
 
 
-def paired_validation(folder, colour, normal, defects, runtime):
+def paired_validation(folder, colour, normal, defects, runtime, *, stage="validation", threshold=None):
     """Score both classes from one lighting setup and pool their full-frame pixels."""
     import numpy as np
     import matplotlib
@@ -86,8 +86,10 @@ def paired_validation(folder, colour, normal, defects, runtime):
                          "image_score": float(image_score), "map_max": float(score.max()),
                          "inference_seconds": seconds, "score_map": score_file.relative_to(folder).as_posix(),
                          "visual_stem": stem})
-            print(f"{colour} validation {index}/{len(inputs)} · {stem} · score {image_score:.6f}", flush=True)
-    threshold = max(row["image_score"] for row in rows[:len(normal)])
+            print(f"{colour} {stage} {index}/{len(inputs)} · {stem} · score {image_score:.6f}", flush=True)
+    if threshold is None:
+        shared.require(stage == "validation", "Test requires the saved validation threshold")
+        threshold = max(row["image_score"] for row in rows[:len(normal)])
     display_max = max(max(row["map_max"] for row in rows), 1e-12)
     metrics = PixelMetrics(runtime.metric_max or display_max)
     empty = RegionTargets(np.zeros((shared.FRAME, shared.FRAME), dtype=bool))
@@ -120,11 +122,11 @@ def paired_validation(folder, colour, normal, defects, runtime):
     for position, collection, label in ((0, negatives, "Normals"), (1, positives, "Defects")):
         ax.scatter([row["image_score"] for row in collection], [position] * len(collection), label=label)
     ax.axvline(threshold, linestyle="--", color="black", label="Validation threshold")
-    ax.set(yticks=[], xlabel="Raw image score", title=f"{colour.title()} lighting · validation")
+    ax.set(yticks=[], xlabel="Raw image score", title=f"{colour.title()} lighting · {stage}")
     ax.legend()
     fig.savefig(folder / "image_scores.png", dpi=150)
     plt.close(fig)
-    return {"stage": "validation", "lighting": colour, "pixel_scope": "all",
+    return {"stage": stage, "lighting": colour, "pixel_scope": "all",
             "image_auroc": roc_auc_score(labels, scores), "image_ap": average_precision_score(labels, scores),
             "threshold": threshold, "threshold_rule": "Flag score > maximum normal score on same-light validation",
             "display_max": display_max, "normal_cohort": {"frames": len(normal), "false_positives": fp,

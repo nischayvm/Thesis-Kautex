@@ -55,8 +55,8 @@ def png_header(path):
     return (*struct.unpack('>II', header[16:24]), header[24], header[25])
 
 
-def positive_pixels(path):
-    if png_header(path) != (SIDE, SIDE, 8, 0):
+def positive_pixels(path, side=SIDE):
+    if png_header(path) != (side, side, 8, 0):
         raise ValueError(f'Unexpected mask format: {path}')
     image = bpy.data.images.load(str(path), check_existing=False)
     try:
@@ -71,11 +71,11 @@ def positive_pixels(path):
         bpy.data.images.remove(image)
 
 
-def render(scene, destination):
+def render(scene, destination, side=SIDE):
     scene.render.filepath = str(destination)
     if bpy.ops.render.render(write_still=True, scene=scene.name) != {'FINISHED'}:
         raise RuntimeError(f'Render failed: {destination}')
-    if png_header(destination) != (SIDE, SIDE, 8, 2):
+    if png_header(destination) != (side, side, 8, 2):
         raise ValueError(f'Unexpected image format: {destination}')
 
 

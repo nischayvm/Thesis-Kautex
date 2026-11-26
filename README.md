@@ -14,6 +14,7 @@ This thesis project uses **ANNAlyzer**, a Blender simulation of an industrial in
 | [Research journal](Anamoly_detection/JOURNAL.md) | Dataset audit, experiment decisions and measured results |
 | [Model performance guide](Anamoly_detection/MODEL_PERFORMANCE.md) | How the four models work and what the validation reports show |
 | [Tray inspection app](Anamoly_detection/inspection_app/README.md) | Local inference, lighting selection, linked zoom and optional mask comparison |
+| [Windows workstation launcher](Anamoly_detection/WORKSTATION.md) | Setup, editable render and training jobs, validation, and reporting |
 | [Smoke-test report](Anamoly_detection/patchcore/results/V1/regular_smoke_20261124T072401_611224Z/report.json) | Tensor shapes, timings, memory use and raw scores |
 | [Grouped split](Anamoly_detection/patchcore/V1/split_v1.json) and [red validation report](Anamoly_detection/patchcore/results/V1/red_phase3_20261124T075750_651308Z/report.json) | Reproducible setup assignments, coreset comparison and stitching results |
 

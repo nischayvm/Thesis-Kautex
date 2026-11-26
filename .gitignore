@@ -1,6 +1,8 @@
 /data/
+/.workstation/
 /Anamoly_detection/reports/
 /Anamoly_detection/*/results/V3/
+/Anamoly_detection/*/results/V5/
 /Anamoly_detection/*/V1/.mpl-cache/
 *.blend[0-9]*
 __pycache__/

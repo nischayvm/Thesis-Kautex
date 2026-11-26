@@ -56,10 +56,12 @@ class Setup:
     dark_field_mix: float = 0.
 
 
-def varied_setups(seed):
+def varied_setups(seed, bands=BANDS, dark_counts=DARK_FIELD_COUNTS):
     rng = random.Random(seed ^ 0x61A099)
 
     def stratified(bounds, count):
+        if not count:
+            return []
         lower, upper = bounds
         step = (upper - lower) / count
         values = [round(lower + step * (i + rng.uniform(.15, .85)), 6) for i in range(count)]
@@ -67,14 +69,14 @@ def varied_setups(seed):
         return values
 
     schedule = []
-    for band, count, camera_range, led_range in BANDS:
-        dark_count = DARK_FIELD_COUNTS[band]
+    for band, count, camera_range, led_range in bands:
+        dark_count = dark_counts[band]
         dark_mix = dict(zip(rng.sample(range(count), dark_count), stratified(DARK_FIELD_MIX, dark_count)))
         settings = [stratified(bounds, count)
                     for bounds in (camera_range, led_range, RIG_INTENSITY, CEILING_INTENSITY)]
         schedule.extend(Setup(band, *values, dark_mix.get(index, 0.))
                         for index, values in enumerate(zip(*settings)))
-    assert len(schedule) == PER_SET and len(set(schedule)) == PER_SET
+    assert len(schedule) == sum(band[1] for band in bands) and len(set(schedule)) == len(schedule)
     return schedule
 
 
@@ -96,7 +98,7 @@ def output_lock(folder):
         yield
 
 
-def configure_render(scene, base_seed):
+def configure_render(scene, base_seed, *, side=SIDE, samples=SAMPLES, gpu_match="4060"):
     scene.frame_set(1)
     scene.camera = scene.objects[CAMERA]
     render_settings = scene.render
@@ -105,20 +107,22 @@ def configure_render(scene, base_seed):
     preferences = bpy.context.preferences.addons["cycles"].preferences
     preferences.compute_device_type = "OPTIX"
     preferences.refresh_devices()
+    gpu = None
     for device in preferences.devices:
         if device.type in ("CPU", "OPTIX"):
-            device.use = device.type == "OPTIX" and "4060" in device.name
-    gpu = next((d.name for d in preferences.devices if d.type == "OPTIX" and d.use), None)
+            device.use = gpu is None and device.type == "OPTIX" and gpu_match.casefold() in device.name.casefold()
+            if device.use:
+                gpu = device.name
     if gpu is None:
-        raise RuntimeError("The RTX 4060 OptiX device used for the timing pilot was not found.")
-    scene.cycles.samples = SAMPLES
+        raise RuntimeError(f"No OptiX device matches {gpu_match or 'any NVIDIA GPU'}.")
+    scene.cycles.samples = samples
     scene.cycles.use_adaptive_sampling = True
     scene.cycles.adaptive_threshold = THRESHOLD
     scene.cycles.use_denoising = True
     scene.cycles.seed = base_seed
     scene.cycles.use_animated_seed = False
     render_settings.use_persistent_data = True
-    render_settings.resolution_x = render_settings.resolution_y = SIDE
+    render_settings.resolution_x = render_settings.resolution_y = side
     render_settings.resolution_percentage = 100
     render_settings.pixel_aspect_x = render_settings.pixel_aspect_y = 1.
     render_settings.use_border = False
@@ -175,13 +179,13 @@ def variant(seed, clean_counts):
     return counts, settings
 
 
-def check_png(path, grayscale=False):
-    expected = (SIDE, SIDE, 8, 0 if grayscale else 2)
+def check_png(path, grayscale=False, side=SIDE):
+    expected = (side, side, 8, 0 if grayscale else 2)
     if png_header(path) != expected:
         raise ValueError(f"Unexpected PNG dimensions or encoding: {path}")
 
 
-def open_catalog(folder, contract, resume):
+def open_catalog(folder, contract, resume, colors=COLORS, ids=SAMPLE_IDS, side=SIDE):
     configuration = folder / "dataset.json"
     catalog_file = folder / "samples.json"
     if resume:
@@ -194,21 +198,21 @@ def open_catalog(folder, contract, resume):
             raise FileExistsError("Output folder is not empty. Pick a new folder or use --resume.")
         atomic_json(configuration, {"configuration": contract, "complete": False})
         records = {}
-    for color in COLORS:
+    for color in colors:
         for kind in DIRECTORIES:
             (folder / color / kind).mkdir(parents=True, exist_ok=True)
     for key, record in records.items():
         color, sample = key.split("/")
-        if color not in COLORS or sample not in SAMPLE_IDS:
+        if color not in colors or sample not in ids:
             raise ValueError(f"Unexpected sample key: {key}")
         for kind in DIRECTORIES:
-            check_png(folder / color / kind / (sample + ".png"), grayscale=kind == "masks")
+            check_png(folder / color / kind / (sample + ".png"), grayscale=kind == "masks", side=side)
         if record["flange_count"] < 7 or record["mask_positive_pixels"] <= 0:
             raise ValueError(f"Invalid completed sample: {key}")
     return records
 
 
-def run(folder, seed, resume):
+def run(folder, seed, resume, custom=None):
     started = time.perf_counter()
     scene = bpy.context.scene
     blend = Path(bpy.data.filepath)
@@ -218,35 +222,50 @@ def run(folder, seed, resume):
     script = Path(__file__).resolve()
     helper = script.with_name("render_prototype_dataset.py")
     source_hashes = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in (blend, script, helper)}
+    colors = COLORS if custom is None else {color: COLORS[color] for color in custom["lights"]}
+    count, side, samples = (PER_SET, SIDE, SAMPLES) if custom is None else (
+        custom["pairs"], custom["resolution"], custom["cycles_samples"])
+    ids = tuple(f"{index:04}" for index in range(1, count + 1))
+    pairs = count * len(colors)
+    total_renders = RENDER_COUNT if custom is None else 2 * pairs
+    bands = BANDS if custom is None else tuple(
+        (band, count // 3 + (i < count % 3), camera, led) for i, (band, _, camera, led) in enumerate(BANDS))
+    dark_counts = DARK_FIELD_COUNTS if custom is None else {band: size // 4 for band, size, _, _ in bands}
     contract = {
         "source_sha256": source_hashes,
-        "seed": seed, "camera": CAMERA, "resolution": [SIDE, SIDE],
-        "cycles_samples": SAMPLES, "noise_threshold": THRESHOLD,
+        "seed": seed, "camera": CAMERA, "resolution": [side, side],
+        "cycles_samples": samples, "noise_threshold": THRESHOLD,
         "denoising": True, "device": "RTX 4060 OptiX", "encoding": "8-bit PNG",
-        "rig_rgb": {name: list(rgb) for name, rgb in COLORS.items()},
-        "varied_height_split": {"low": 34, "mid": 33, "high": 33},
+        "rig_rgb": {name: list(rgb) for name, rgb in colors.items()},
+        "varied_height_split": {band: size for band, size, _, _ in bands},
         "colored_set_lighting": {
             "rig_intensity_range": list(RIG_INTENSITY),
             "ceiling_base_intensity_range": list(CEILING_INTENSITY),
             "dark_field_mix_range": list(DARK_FIELD_MIX),
-            "dark_field_examples_by_band_per_color": DARK_FIELD_COUNTS,
+            "dark_field_examples_by_band_per_color": dark_counts,
             "full_dark_field_led_height_m": GRAZING_HEIGHT,
             "full_dark_field_ceiling_fraction": GRAZING_CEILING_FRACTION,
         },
         "regular_heights_m": {"camera": 1.61, "led": 1.102},
-        "expected_pairs": PAIR_COUNT, "expected_renders": RENDER_COUNT,
+        "expected_pairs": pairs, "expected_renders": total_renders,
         "normal_regular": "Copies of one reference because all scene and sampling settings are fixed.",
         "mask": "Grayscale 0 for background and 255 for visible blister pixels.",
     }
-    records = open_catalog(folder, contract, resume)
-    if len(records) == PAIR_COUNT:
+    if custom is not None:
+        contract["workstation_render"] = custom
+        contract["device"] = "OptiX"
+        contract["normal_regular"] = "Separate clean render for every regular setup."
+        contract.pop("regular_heights_m")
+    records = open_catalog(folder, contract, resume, colors, ids, side)
+    if len(records) == pairs:
         configuration = folder / "dataset.json"
         if not json.loads(configuration.read_text(encoding="utf-8"))["complete"]:
             atomic_json(configuration, {"configuration": contract, "complete": True})
-        print(f"Already complete: {PAIR_COUNT} matched sets in {folder}", flush=True)
+        print(f"Already complete: {pairs} matched sets in {folder}", flush=True)
         return
 
-    gpu = configure_render(scene, seed)
+    gpu = configure_render(scene, seed, side=side, samples=samples,
+                           gpu_match=custom["gpu_match"] if custom else "4060")
     motion, lights = configure_lighting(scene)
     scope = {"__name__": "batch_anomalies"}
     exec(compile(source.as_string(), source.name, "exec"), scope)
@@ -256,14 +275,14 @@ def run(folder, seed, resume):
     clean_counts = dict.fromkeys(scope["COUNT_KEYS"], 0)
     generate(seed=seed, counts=clean_counts, scene=scene)
 
-    schedule = varied_setups(seed)
+    schedule = varied_setups(seed, bands, dark_counts)
     reference = folder / "regular" / "normal" / "0001.png"
-    rendered = len(records) + int(reference.is_file())
+    rendered = len(records) + int(custom is None and reference.is_file())
     rendered += sum((folder / color / "normal" / (sample + ".png")).is_file()
-                    for color in ("red", "green") for sample in SAMPLE_IDS)
+                    for color in colors if custom is not None or color != "regular" for sample in ids)
     recent_timings = deque(maxlen=12)
-    print(f"ANNAlyzer | {gpu} | {SIDE} × {SIDE} | {SAMPLES} samples | {folder}", flush=True)
-    print(f"PROGRESS | {len(records)}/{PAIR_COUNT} pairs | {rendered}/{RENDER_COUNT} renders", flush=True)
+    print(f"ANNAlyzer | {gpu} | {side} × {side} | {samples} samples | {folder}", flush=True)
+    print(f"PROGRESS | {len(records)}/{pairs} pairs | {rendered}/{total_renders} renders", flush=True)
 
     with TemporaryDirectory(prefix=".render_", dir=folder) as scratch_directory:
         scratch = Path(scratch_directory)
@@ -272,30 +291,33 @@ def run(folder, seed, resume):
 
         def capture(sample, kind, destination):
             nonlocal rendered
-            print(f"START render {rendered + 1}/{RENDER_COUNT} | {sample} | {kind}", flush=True)
+            print(f"START render {rendered + 1}/{total_renders} | {sample} | {kind}", flush=True)
             tick = time.perf_counter()
             scene.camera = scene.objects[CAMERA]
-            render(scene, staged)
+            render(scene, staged, side)
             seconds = time.perf_counter() - tick
             staged.replace(destination)
             rendered += 1
             recent_timings.append(seconds)
-            remaining = timedelta(seconds=round((RENDER_COUNT - rendered) *
+            remaining = timedelta(seconds=round((total_renders - rendered) *
                                                 sum(recent_timings) / len(recent_timings)))
-            print(f"DONE  render {rendered}/{RENDER_COUNT} | {seconds:.1f}s | "
-                  f"{len(records)}/{PAIR_COUNT} pairs | render ETA {remaining}", flush=True)
+            print(f"DONE  render {rendered}/{total_renders} | {seconds:.1f}s | "
+                  f"{len(records)}/{pairs} pairs | render ETA {remaining}", flush=True)
             return round(seconds, 2)
 
-        for color_index, (color, rgb) in enumerate(COLORS.items()):
-            setups = [Setup("fixed", 1.61, 1.102)] * PER_SET if color == "regular" else schedule
+        for color_index, (color, rgb) in enumerate(colors.items()):
+            fixed_regular = custom is None and color == "regular"
+            setups = [Setup("fixed", 1.61, 1.102)] * count if fixed_regular else schedule
             lights["Rig RGB"] = rgb
             for index, setup in enumerate(setups, 1):
                 name = f"{index:04}"
                 key = f"{color}/{name}"
                 if key in records:
                     continue
-                motion["All 4 camera height (m)"] = setup.camera_height
-                motion["All 4 light height (m)"] = setup.led_height
+                camera = setup.camera_height if custom is None or custom["camera_height"] is None else custom["camera_height"]
+                led = setup.led_height if custom is None or custom["led_height"] is None else custom["led_height"]
+                motion["All 4 camera height (m)"] = camera
+                motion["All 4 light height (m)"] = led
                 motion["Dark-field mix"] = setup.dark_field_mix
                 lights["Rig LEDs"] = setup.rig_intensity
                 lights["Ceiling LEDs"] = setup.ceiling_intensity
@@ -307,18 +329,18 @@ def run(folder, seed, resume):
                 paths = {kind: folder / color / kind / (name + ".png") for kind in DIRECTORIES}
                 normal_path = paths["normal"]
                 clean_seconds = None
-                clean_target = reference if color == "regular" else normal_path
+                clean_target = reference if fixed_regular else normal_path
                 if not clean_target.is_file():
                     generate(seed=seed, counts=clean_counts, scene=scene)
                     save_mask.mute = True
                     clean_seconds = capture(key, "clean", clean_target)
                 else:
-                    check_png(clean_target)
+                    check_png(clean_target, side=side)
                 if normal_path != clean_target:
                     shutil.copyfile(clean_target, staged)
                     staged.replace(normal_path)
 
-                anomaly_seed = seed + color_index * PER_SET + index
+                anomaly_seed = seed + color_index * count + index
                 counts, size_settings = variant(anomaly_seed, clean_counts)
                 for setting, value in size_settings.items():
                     controls[setting] = value
@@ -331,13 +353,13 @@ def run(folder, seed, resume):
                 masks = list(scratch.glob("blister_mask*.png"))
                 if len(masks) != 1:
                     raise RuntimeError(f"Expected one compositor mask for {key}, found {masks}")
-                pixels = positive_pixels(masks[0])
+                pixels = positive_pixels(masks[0], side)
                 masks[0].replace(paths["masks"])
                 evaluated = bpy.context.evaluated_depsgraph_get()
                 slide = scene.objects["Front LED vertical slide"].evaluated_get(evaluated)
                 records[key] = {
                     "rig_color": color, "height_band": setup.band,
-                    "camera_height_m": setup.camera_height, "led_height_m": setup.led_height,
+                    "camera_height_m": camera, "led_height_m": led,
                     "effective_led_height_m": float(slide.matrix_world.translation.z),
                     "rig_intensity": setup.rig_intensity, "ceiling_base_intensity": setup.ceiling_intensity,
                     "dark_field_mix": setup.dark_field_mix,
@@ -348,25 +370,40 @@ def run(folder, seed, resume):
                     "files": {kind: path.relative_to(folder).as_posix() for kind, path in paths.items()},
                 }
                 atomic_json(folder / "samples.json", records)
-                print(f"PAIR {len(records)}/{PAIR_COUNT} ({100 * len(records) / PAIR_COUNT:.1f}%) | "
+                print(f"PAIR {len(records)}/{pairs} ({100 * len(records) / pairs:.1f}%) | "
                       f"{key} | {setup.band} | seed {anomaly_seed} | "
                       f"{counts['flange_blisters']} flange, {counts['crossply_blisters']} cross-ply", flush=True)
 
-    assert len(records) == PAIR_COUNT and rendered == RENDER_COUNT
+    assert len(records) == pairs and rendered == total_renders
     elapsed = round(time.perf_counter() - started, 2)
     atomic_json(folder / "dataset.json", {"configuration": contract, "complete": True,
                                          "last_session_elapsed_seconds": elapsed})
-    print(f"COMPLETE | {PAIR_COUNT} matched pairs | {3 * PAIR_COUNT} PNGs | {folder}", flush=True)
+    print(f"COMPLETE | {pairs} matched pairs | {3 * pairs} PNGs | {folder}", flush=True)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", required=True, type=Path, help="Dataset folder")
+    parser.add_argument("--output", type=Path, help="Dataset folder")
+    parser.add_argument("--workstation-config", type=Path, help="Render a separate custom dataset")
     parser.add_argument("--seed", type=int, default=24117)
     parser.add_argument("--resume", action="store_true", help="Continue in an existing batch folder")
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
-    if not 0 <= args.seed <= 2147483647 - PAIR_COUNT:
-        parser.error("--seed is outside the supported range")
-    output_folder = args.output.resolve()
+    custom = None
+    if args.workstation_config:
+        if args.output is not None:
+            parser.error("The workstation config sets the dataset folder.")
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "Anamoly_detection"))
+        from workstation_config import custom_dataset, read_json, validate
+
+        config = validate(read_json(args.workstation_config))
+        custom = config["render"]
+        output_folder = custom_dataset(config["dataset"])
+        args.seed = custom["seed"]
+    else:
+        if args.output is None:
+            parser.error("--output is required for the original batch.")
+        if not 0 <= args.seed <= 2147483647 - PAIR_COUNT:
+            parser.error("--seed is outside the supported range")
+        output_folder = args.output.resolve()
     with output_lock(output_folder):
-        run(output_folder, args.seed, args.resume)
+        run(output_folder, args.seed, args.resume, custom)

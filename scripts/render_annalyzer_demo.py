@@ -28,12 +28,13 @@ RENDER_SEED = 24117
 MAX_SEED = 2**31 - 1
 
 
-def configure_capture(scene, color):
-    gpu = configure_render(scene, RENDER_SEED)
+def configure_capture(scene, color, side=SIDE, samples=100, gpu_match="4060",
+                      camera_height=CAMERA_HEIGHT, led_height=LED_HEIGHT):
+    gpu = configure_render(scene, RENDER_SEED, side=side, samples=samples, gpu_match=gpu_match)
     motion, levels = configure_lighting(scene)
-    motion["All 4 camera height (m)"] = CAMERA_HEIGHT
+    motion["All 4 camera height (m)"] = camera_height
     motion["Front left camera height (m)"] = 1.575  # Neutral offset on top of the shared height.
-    motion["All 4 light height (m)"] = LED_HEIGHT
+    motion["All 4 light height (m)"] = led_height
     levels["Rig RGB"] = COLORS[color]
     if color != "regular":
         levels["Rig LEDs"], levels["Ceiling LEDs"] = 1.75, .75
@@ -47,7 +48,7 @@ def configure_capture(scene, color):
     depsgraph = bpy.context.evaluated_depsgraph_get()
     pose = camera.evaluated_get(depsgraph).matrix_world.copy()
     led = scene.objects["Front LED vertical slide"].evaluated_get(depsgraph).matrix_world.translation.z
-    if abs(pose.translation.z - CAMERA_HEIGHT) > .0002 or abs(led - LED_HEIGHT) > .0002:
+    if abs(pose.translation.z - camera_height) > .0002 or abs(led - led_height) > .0002:
         raise ValueError("The saved scene did not reach the demo camera or LED height.")
     return {
         "camera": CAMERA, "camera_matrix_world": [list(row) for row in pose],
@@ -59,22 +60,23 @@ def configure_capture(scene, color):
     }
 
 
-def write_black_mask(path):
+def write_black_mask(path, side=SIDE):
     """Write an 8-bit grayscale PNG with zero foreground pixels."""
     def chunk(kind, data):
         return pack(">I", len(data)) + kind + data + pack(">I", crc32(kind + data))
 
-    header = pack(">IIBBBBB", SIDE, SIDE, 8, 0, 0, 0, 0)
-    rows = bytes(SIDE * (SIDE + 1))  # Each row begins with a zero PNG filter byte.
+    header = pack(">IIBBBBB", side, side, 8, 0, 0, 0, 0)
+    rows = bytes(side * (side + 1))  # Each row begins with a zero PNG filter byte.
     path.write_bytes(b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) +
                      chunk(b"IDAT", compress(rows)) + chunk(b"IEND", b""))
 
 
-def run(color, kind, seed, output_root):
+def run(color, kind, seed, output_root, *, side=SIDE, samples=100, gpu_match="4060",
+        camera_height=CAMERA_HEIGHT, led_height=LED_HEIGHT):
     if not bpy.app.background or not bpy.data.filepath:
         raise RuntimeError("Run the demo with the saved inspection scene in background Blender.")
     scene = bpy.context.scene
-    capture = configure_capture(scene, color)
+    capture = configure_capture(scene, color, side, samples, gpu_match, camera_height, led_height)
     source = bpy.data.texts["generate_tray_anomalies.py"]
     scope = {"__name__": "demo_anomalies"}
     exec(compile(source.as_string(), source.name, "exec"), scope)
@@ -91,13 +93,13 @@ def run(color, kind, seed, output_root):
     metadata = {
         "complete": False, "lighting": color, "kind": kind, "blister_seed": seed if blistered else None,
         "cycles_seed": RENDER_SEED, "scene": Path(bpy.data.filepath).name, "capture": capture,
-        "resolution": [SIDE, SIDE], "cycles_samples": scene.cycles.samples, "denoising": True,
+        "resolution": [side, side], "cycles_samples": scene.cycles.samples, "denoising": True,
         "noise_threshold": THRESHOLD, "images": {},
     }
     manifest = output / "demo.json"
     atomic_json(manifest, metadata)
     print(f"OUTPUT {output}", flush=True)
-    print(f"SETUP {color} | {kind} | {SIDE} x {SIDE} | {capture['device']}", flush=True)
+    print(f"SETUP {color} | {kind} | {side} x {side} | {capture['device']}", flush=True)
     if blistered:
         print(f"BLISTER SEED {seed}", flush=True)
 
@@ -118,7 +120,7 @@ def run(color, kind, seed, output_root):
         temporary_image = scratch / f"{kind}.png"
         print(f"START 1/1 | {kind}", flush=True)
         start = perf_counter()
-        render(scene, temporary_image)
+        render(scene, temporary_image, side)
         result = {"image": temporary_image.name, "render_seconds": round(perf_counter() - start, 2),
                   "mask": "blister_mask.png", "mask_positive_pixels": 0}
         if blistered:
@@ -126,11 +128,11 @@ def run(color, kind, seed, output_root):
             if len(files) != 1:
                 raise ValueError(f"Expected one blister mask and found {len(files)}.")
             mask = files[0]
-            result.update(mask_positive_pixels=positive_pixels(mask), flange_blisters=counts["flange_blisters"],
+            result.update(mask_positive_pixels=positive_pixels(mask, side), flange_blisters=counts["flange_blisters"],
                           cross_ply_blisters=counts["crossply_blisters"], size_settings=settings, instances=defects)
         else:
             mask = scratch / "black_mask.png"
-            write_black_mask(mask)
+            write_black_mask(mask, side)
         mask.replace(output / result["mask"])
         temporary_image.replace(output / temporary_image.name)
         metadata["images"][kind] = result
@@ -146,6 +148,11 @@ if __name__ == "__main__":
     parser.add_argument("--kind", required=True, choices=KINDS)
     parser.add_argument("--seed", help="Omit or leave blank for a random blister seed.")
     parser.add_argument("--output-root", type=Path, default=OUTPUT)
+    parser.add_argument("--resolution", type=int, default=SIDE)
+    parser.add_argument("--samples", type=int, default=100)
+    parser.add_argument("--gpu-match", default="4060")
+    parser.add_argument("--camera-height", type=float, default=CAMERA_HEIGHT)
+    parser.add_argument("--led-height", type=float, default=LED_HEIGHT)
     args = parser.parse_args(sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else [])
     typed_seed = args.seed if args.seed is not None else os.getenv("ANNALYZER_DEMO_SEED", "")
     try:
@@ -154,4 +161,8 @@ if __name__ == "__main__":
             raise ValueError
     except ValueError:
         parser.error(f"Seed must be a whole number from 0 to {MAX_SEED} or left blank.")
-    run(args.lighting, args.kind, seed, args.output_root.resolve())
+    if args.resolution < 512 or args.samples < 1:
+        parser.error("Use a resolution of at least 512 pixels and one or more Cycles samples.")
+    run(args.lighting, args.kind, seed, args.output_root.resolve(), side=args.resolution,
+        samples=args.samples, gpu_match=args.gpu_match, camera_height=args.camera_height,
+        led_height=args.led_height)

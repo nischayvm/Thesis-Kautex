@@ -1,6 +1,7 @@
 """PyQt6 front end for single-frame ANNAlyzer inspection."""
 
 import json
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -283,7 +284,9 @@ class Inspection(QWidget):
             self.submit()
             return
         self.stop_worker()
-        python = ANOMALY / key[0] / ".venv" / "Scripts" / "python.exe"
+        env_root = os.getenv("ANNALYZER_MODEL_ENV_ROOT")
+        model_env = Path(env_root) / key[0] if env_root else ANOMALY / key[0] / ".venv"
+        python = model_env / "Scripts" / "python.exe"
         if not python.is_file():
             self.fail(f"Model environment not found at {python}")
             return

@@ -148,7 +148,7 @@ def save_checkpoint(torch, state, path):
     pending.replace(path)
 
 
-def build_runtime(folder, colour, records, environment):
+def build_runtime(folder, colour, records, environment, *, support=None, stitcher=None):
     import torch
     from torch.nn import functional as F
     import model
@@ -157,7 +157,7 @@ def build_runtime(folder, colour, records, environment):
 
     normalization = ((.485, .456, .406), (.229, .224, .225))
     mean, std = (torch.tensor(v, device="cuda").view(1, 3, 1, 1) for v in normalization)
-    fit, selection, calibration = split_support(records)
+    fit, selection, calibration = split_support(records) if support is None else support
     stats = {}
     encoder_file, field_file = folder / "vit_finetuned.pt", folder / "flow_state.pt"
     with measure("load_pretrained_vit", stats):
@@ -196,7 +196,7 @@ def build_runtime(folder, colour, records, environment):
                                                   "operating_time": time, "calibration": sweep})
     center, spread = saved["center"].cuda(), saved["spread"].cuda()
     del calibration_features
-    stitcher = Stitcher()
+    stitcher = Stitcher() if stitcher is None else stitcher
 
     @torch.inference_mode()
     def infer(rgb):

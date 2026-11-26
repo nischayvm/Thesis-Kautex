@@ -1,4 +1,4 @@
-"""Publish selected completed V2–V4 validation artifacts and the journal."""
+"""Publish selected completed V2–V5 validation artifacts and the journal."""
 
 import argparse
 import hashlib
@@ -19,7 +19,7 @@ EXPORTS = ANOMALY / "benchmark_exports"
 MODELS = journal_importer.MODELS
 RUN_NAME = journal_importer.V2_RUN
 LIGHTS = ("red", "green", "regular")
-VERSIONS = ("V2", "V3", "V4")
+VERSIONS = ("V2", "V3", "V4", "V5")
 SUMMARIES = ("report.json", "scores.csv", "image_scores.png")
 JOURNAL_PATH = "Anamoly_detection/JOURNAL.md"
 REMOTE_URLS = {
@@ -127,7 +127,7 @@ def is_publish_path(path):
     return re.fullmatch(
         rf"Anamoly_detection/(?:benchmark_exports/(?:{models})_(?:{RUN_NAME}|{journal_importer.MODERN_RUN}_(?:red|green|regular))"
         rf"_validation_artifacts\.zip|(?:{models})/results/"
-        rf"(?:V2/{RUN_NAME}|V[34]/{journal_importer.MODERN_RUN}/(?:red|green|regular))/validation/(?:{summaries}))", path,
+        rf"(?:V2/{RUN_NAME}|V[345]/{journal_importer.MODERN_RUN}/(?:red|green|regular))/validation/(?:{summaries}))", path,
     ) is not None
 
 

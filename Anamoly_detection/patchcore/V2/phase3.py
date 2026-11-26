@@ -69,20 +69,20 @@ def fit_bank(primary, secondary, budget):
 
 
 class Stitcher:
-    def __init__(self):
+    def __init__(self, frame=FRAME, origins=ORIGINS, sigma=SIGMA):
+        self.frame, self.origins = frame, origins
         centered = np.arange(TILE, dtype=np.float32) - (TILE - 1) / 2
-        gaussian = np.exp(-0.5 * (centered / SIGMA) ** 2)
+        gaussian = np.exp(-0.5 * (centered / sigma) ** 2)
         self.weights = {"uniform": np.ones((TILE, TILE), dtype=np.float32), "gaussian": np.outer(gaussian, gaussian)}
-        self.denominators = {name: np.zeros((FRAME, FRAME), dtype=np.float32) for name in STITCHES}
-        for y, x in ORIGINS:
+        self.denominators = {name: np.zeros((frame, frame), dtype=np.float32) for name in STITCHES}
+        for y, x in origins:
             for name, weights in self.weights.items():
                 self.denominators[name][y:y + TILE, x:x + TILE] += weights
-        require(self.denominators["uniform"].min() == 1 and self.denominators["uniform"].max() == 4
-                and self.denominators["gaussian"].min() > 0, "Invalid stitching coverage")
+        require(self.denominators["gaussian"].min() > 0, "Invalid stitching coverage")
 
     def apply(self, tile_maps, name):
-        result = np.zeros((FRAME, FRAME), dtype=np.float32)
-        for (y, x), tile in zip(ORIGINS, tile_maps, strict=True):
+        result = np.zeros((self.frame, self.frame), dtype=np.float32)
+        for (y, x), tile in zip(self.origins, tile_maps, strict=True):
             result[y:y + TILE, x:x + TILE] += tile * self.weights[name]
         result /= self.denominators[name]
         return result
